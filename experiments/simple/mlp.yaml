@@ -1,0 +1,28 @@
+name: mlp
+device: cpu
+
+model:
+  module: src.models.simple
+  name: MLP
+  args:
+    layer_dims: [4]
+
+dataset:
+  module: src.datasets
+  name: IrisDataset
+  args:
+
+
+loader:
+  module: src.dataloaders
+  name: DataLoaderRandomSplit
+  args:
+    batch_size: 10
+    test_fraction: .1
+
+trainer:
+  module: src.trainer
+  name: Trainer
+  args:
+    n_epochs: 400
+    log_dir: results
