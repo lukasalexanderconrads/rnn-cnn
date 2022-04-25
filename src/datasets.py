@@ -1,17 +1,22 @@
 import torch
 from torch.utils.data import Dataset, DataLoader
-from sklearn.datasets import load_iris
+from sklearn.datasets import load_iris, fetch_covtype
 
-class IrisDataset(Dataset):
+
+class ClassificationDataset(Dataset):
     def __init__(self, device):
-        super(IrisDataset).__init__()
+        super(ClassificationDataset, self).__init__()
 
-        input, target = load_iris(return_X_y=True)
-        self.input = torch.tensor(input, device=device, dtype=torch.float32)
-        self.target = torch.tensor(target, device=device, dtype=torch.int64)
+        input, target = self._get_data()
+
+        self.input = input.to(device)
+        self.target = target.to(device)
 
         self.data_dim = self.input.size(1)
         self.n_classes = int(max(self.target) + 1)
+
+    def _get_data(self):
+        pass
 
     def __getitem__(self, item):
         return {'input': self.input[item],
@@ -19,6 +24,32 @@ class IrisDataset(Dataset):
 
     def __len__(self):
         return self.input.size(0)
+
+
+class IrisDataset(ClassificationDataset):
+    def __init__(self, device):
+        super(IrisDataset, self).__init__(device)
+
+    @staticmethod
+    def _get_data():
+        input, target = load_iris(return_X_y=True)
+        input = torch.tensor(input, dtype=torch.float32)
+        target = torch.tensor(target, dtype=torch.int64)
+        return input, target
+
+
+class CovertypeDataset(ClassificationDataset):
+    def __init__(self, device):
+        super(CovertypeDataset, self).__init__(device)
+
+    @staticmethod
+    def _get_data():
+        input, target = fetch_covtype(return_X_y=True)
+        input = torch.tensor(input, dtype=torch.float32)
+        target = torch.tensor(target, dtype=torch.int64)
+        return input, target
+
+
 
 
 

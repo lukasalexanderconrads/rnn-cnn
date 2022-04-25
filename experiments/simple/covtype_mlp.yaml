@@ -1,16 +1,15 @@
-name: rnn
+name: covtype/mlp
 device: cpu
 
 model:
   module: src.models.simple
-  name: RNN
+  name: MLP
   args:
-    fc_dims: []
-    rnn_dim: 4
+    layer_dims: [100, 100]
 
 dataset:
   module: src.datasets
-  name: IrisDataset
+  name: CovertypeDataset
   args:
 
 
@@ -18,12 +17,12 @@ loader:
   module: src.dataloaders
   name: DataLoaderRandomSplit
   args:
-    batch_size: 10
+    batch_size: 100
     test_fraction: .1
 
 trainer:
   module: src.trainer
   name: Trainer
   args:
-    n_epochs: 400
+    n_epochs: 10
     log_dir: results
