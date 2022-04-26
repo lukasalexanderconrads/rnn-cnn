@@ -1,6 +1,8 @@
 import os
+from tqdm import tqdm
 
 from torch.utils.tensorboard import SummaryWriter
+from src.utils import MetricAccumulator
 
 class Trainer:
 
@@ -20,12 +22,15 @@ class Trainer:
 
         self.n_epochs = kwargs.get('n_epochs')
 
+        # logging
         log_dir = kwargs.get('log_dir')
         log_dir = os.path.join(log_dir, name)
         self.writer = SummaryWriter(log_dir=log_dir)
 
+        self.metric_avg = MetricAccumulator()
+
     def train(self):
-        for epoch in range(self.n_epochs):
+        for epoch in tqdm(range(self.n_epochs), desc='epochs'):
             self.model.train()
             self.train_epoch(epoch)
 
@@ -36,15 +41,23 @@ class Trainer:
         self.writer.close()
 
     def train_epoch(self, epoch):
-        for minibatch in self.data_loader.train:
+        self.metric_avg.reset()
+        for minibatch in tqdm(self.data_loader.train, desc='train set', leave=False):
             metrics = self.model.train_step(minibatch, self.optimizer)
-            self.writer.add_scalar('train/loss', metrics['loss'], epoch)
+            self.metric_avg.update(metrics)
+        metrics = self.metric_avg.get_average()
+        self.writer.add_scalar('train/loss', metrics['loss'], epoch)
 
     def test_epoch(self, epoch):
-        for minibatch in self.data_loader.test:
+        self.metric_avg.reset()
+        for minibatch in tqdm(self.data_loader.test, desc='test set', leave=False):
             metrics = self.model.test_step(minibatch)
-            self.writer.add_scalar('test/loss', metrics['loss'], epoch)
-            self.writer.add_scalar('test/accuracy', metrics['accuracy'], epoch)
+            self.metric_avg.update(metrics)
+        metrics = self.metric_avg.get_average()
+        self.writer.add_scalar('test/loss', metrics['loss'], epoch)
+        self.writer.add_scalar('test/accuracy', metrics['accuracy'], epoch)
+
+
 
 
 

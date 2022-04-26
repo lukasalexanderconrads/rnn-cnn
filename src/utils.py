@@ -1,5 +1,6 @@
 import yaml
 from importlib import import_module
+from collections import defaultdict
 
 
 def read_yaml(path):
@@ -32,6 +33,26 @@ def create_instance(module_name, class_name, kwargs, *args):
     else:
         instance = clazz(*args, **kwargs)
     return instance
+
+
+class MetricAccumulator:
+    def __init__(self):
+        self.reset()
+
+    def update(self, metrics):
+        for key, value in metrics.items():
+            self.metrics[key] += value
+        self.counter += 1
+
+    def get_average(self):
+        for key in self.metrics.keys():
+            self.metrics[key] /= self.counter
+        return self.metrics
+
+    def reset(self):
+        self.metrics = defaultdict(lambda: 0)
+        self.counter = 0
+
 
 
 
