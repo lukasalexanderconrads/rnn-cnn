@@ -1,0 +1,38 @@
+name: covtype/rnn_loss-scheduled
+device: cpu
+
+model:
+  module: src.models.simple
+  name: RNN
+  args:             # layers: (in_dim, fc_dims[0]), ..., (fc_dims[-1], rnn_dim), (rnn_dim, rnn_dim), (rnn_dim, out_dim)
+    fc_dims: []
+    rnn_dim: 50
+    threshold: .9             # threshold above which recurrence is stopped
+    max_rec: 10               # maximum number of recurrences
+    skip_connections: false   # if skip connection is used in recurrent layer
+
+dataset:
+  module: src.datasets
+  name: CovertypeDataset
+  args:
+
+
+loader:
+  module: src.dataloaders
+  name: DataLoaderRandomSplit
+  args:
+    batch_size: 100
+    test_fraction: .1
+
+trainer:
+  module: src.trainer
+  name: Trainer
+  args:
+    n_epochs: 20
+    log_dir: results
+
+    loss_scheduler: # fraction of total training that a given loss type is active
+      first_step: .5    # loss is computed for the first step's output
+      every_step: .1    # loss is computed for every step's output
+      # remaining time:   loss is computed for the final step's output
+
