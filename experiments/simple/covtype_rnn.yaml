@@ -1,4 +1,4 @@
-name: covtype/rnn_loss-scheduled
+name: covtype/rnn_fixed2
 device: cpu
 
 model:
@@ -7,8 +7,10 @@ model:
   args:             # layers: (in_dim, fc_dims[0]), ..., (fc_dims[-1], rnn_dim), (rnn_dim, rnn_dim), (rnn_dim, out_dim)
     fc_dims: []
     rnn_dim: 50
-    threshold: .9             # threshold above which recurrence is stopped
-    max_rec: 10               # maximum number of recurrences
+    head_dims: []
+    threshold: 1             # threshold above which recurrence is stopped
+    max_rec: 2               # maximum number of recurrences
+    loss_type: final
     skip_connections: false   # if skip connection is used in recurrent layer
 
 dataset:
@@ -28,11 +30,15 @@ trainer:
   module: src.trainer
   name: Trainer
   args:
-    n_epochs: 20
+    n_epochs: 100
     log_dir: results
 
-    loss_scheduler: # fraction of total training that a given loss type is active
-      first_step: .5    # loss is computed for the first step's output
-      every_step: .1    # loss is computed for every step's output
+    #loss_scheduler: None # fraction of total training that a given loss type is active
+      #first_step: .0    # loss is computed for the first step's output
+      #every_step: .0    # loss is computed for every step's output
       # remaining time:   loss is computed for the final step's output
+
+    #max_rec_scheduler: # linear increase from min to max
+      #min: 1
+      #max: 10
 

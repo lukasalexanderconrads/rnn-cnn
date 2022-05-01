@@ -24,6 +24,7 @@ class Trainer:
         self.n_epochs = kwargs.get('n_epochs')
 
         self.loss_scheduler = kwargs.get('loss_scheduler', None)
+        self.max_rec_scheduler = kwargs.get('max_rec_scheduler', None)
 
         # logging
         timestamp = self.get_timestamp()
@@ -37,6 +38,8 @@ class Trainer:
         for epoch in tqdm(range(self.n_epochs), desc='epochs'):
             if self.loss_scheduler is not None:
                 self.update_loss_type(epoch)
+            if self.max_rec_scheduler is not None:
+                self.update_max_rec(epoch)
             self.model.train()
             self.train_epoch(epoch)
 
@@ -65,12 +68,19 @@ class Trainer:
 
     def update_loss_type(self, epoch):
         epoch_frac = epoch / self.n_epochs
-        if self.loss_scheduler['first_step'] < epoch_frac:
+        if epoch_frac < self.loss_scheduler['first_step']:
             self.model.loss_type = 'first'
-        elif self.loss_scheduler['every_step'] < epoch_frac:
+        elif epoch_frac < self.loss_scheduler['every_step']:
             self.model.loss_type = 'every'
         else:
             self.model.loss_type = 'final'
+
+    def update_max_rec(self, epoch):
+        min = self.max_rec_scheduler['min']
+        max = self.max_rec_scheduler['max']
+        epoch_frac = epoch / self.n_epochs
+        max_rec = int(min + epoch_frac * (max - min))
+        self.model.max_rec = max_rec
 
     def log(self, metrics, epoch, split='train'):
         for key, value in metrics.items():

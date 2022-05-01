@@ -1,3 +1,4 @@
+import torch
 import yaml
 from importlib import import_module
 from collections import defaultdict
@@ -53,8 +54,15 @@ class MetricAccumulator:
         self.metrics = defaultdict(lambda: 0)
         self.counter = 0
 
+def create_mlp(layer_dims, output_activation=False):
+    n_layers = len(layer_dims)
+    layers = []
+    for layer_idx in range(n_layers - 1):
+        layers.append(torch.nn.Linear(layer_dims[layer_idx], layer_dims[layer_idx + 1]))
+        if layer_idx != n_layers - 2 or output_activation:
+            layers.append(torch.nn.ReLU())
 
-
+    return torch.nn.Sequential(*layers)
 
 
 

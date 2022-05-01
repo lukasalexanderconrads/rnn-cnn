@@ -2,7 +2,7 @@ import torch
 from torch import nn
 
 from src.models.base import Model
-
+from src.utils import create_mlp
 
 class MLP(Model):
     def __init__(self, in_dim: int, out_dim: int, **kwargs):
@@ -16,14 +16,10 @@ class MLP(Model):
         layer_dims = kwargs.get('layer_dims')
         layer_dims = [in_dim] + layer_dims + [out_dim]
 
-        n_layers = len(layer_dims)
-        layers = []
-        for layer_idx in range(n_layers - 1):
-            layers.append(nn.Linear(layer_dims[layer_idx], layer_dims[layer_idx + 1]))
-            if layer_idx != n_layers - 2:
-                layers.append(nn.ReLU())
+        self.get_logits = create_mlp(layer_dims).to(self.device)
 
-        self.get_logits = nn.Sequential(*layers).to(self.device)
+        print('model layers:')
+        print(self.get_logits)
 
     def forward(self, input: torch.Tensor):
         """
@@ -55,14 +51,18 @@ class MLP(Model):
 
         logits = self.forward(input)
 
-        loss = self.loss(logits, target)
-        accuracy = self.get_accuracy(logits, target)
+        metrics = self.metrics(logits, target)
 
-        return {'loss': loss, 'accuracy': accuracy}
+        return metrics
 
     @staticmethod
     def loss(logits, target):
         return nn.functional.cross_entropy(logits, target)
+
+    def metrics(self, logits, target):
+        accuracy = self.get_accuracy(logits, target)
+        ce_loss = self.loss(logits, target)
+        return {'cross_entropy': ce_loss, 'accuracy': accuracy}
 
     @staticmethod
     def get_accuracy(logits, target):
@@ -84,28 +84,28 @@ class RNN(MLP):
         super(MLP, self).__init__(**kwargs)
 
         # define network architecture
-        fc_dims = kwargs.get('fc_dims')
+        fc_dims = kwargs.get('fc_dims', [])
         rnn_dim = kwargs.get('rnn_dim')
+        head_dims = kwargs.get('head_dims', [])
 
         fc_dims = [in_dim] + fc_dims + [rnn_dim]
-        n_layers = len(fc_dims)
-        layers = []
-        for layer_idx in range(n_layers - 1):
-            layers.append(nn.Linear(fc_dims[layer_idx], fc_dims[layer_idx + 1]))
-            layers.append(nn.ReLU())
-
-        self.fc_layers = nn.Sequential(*layers).to(self.device)
+        self.fc_layers = create_mlp(fc_dims, output_activation=True).to(self.device)
 
         self.rnn_layer = nn.Sequential(nn.Linear(rnn_dim, rnn_dim),
                                        nn.ReLU()).to(self.device)
-
-        self.get_logits = nn.Linear(rnn_dim, out_dim).to(self.device)
+        head_dims = [rnn_dim] + head_dims + [out_dim]
+        self.get_logits = create_mlp(head_dims).to(self.device)
 
         # get recurrency parameters
         self.max_rec = kwargs.get('max_rec', 10)
         self.threshold = kwargs.get('threshold', .9)
         self.skip_connections = kwargs.get('skip_connections', False)
         self.loss_type = kwargs.get('loss_type', 'final') # first, every, final
+
+        print('model layers:')
+        print(self.fc_layers)
+        print(self.rnn_layer)
+        print(self.get_logits)
 
     def forward(self, input):
         """
@@ -194,7 +194,12 @@ class RNN(MLP):
 
         ce_loss = nn.functional.cross_entropy(logits, target)
 
-        return {'cross_entropy': ce_loss, 'accuracy': accuracy, 'average steps': avg_steps}
+        loss_type = ['first', 'every', 'final'].index(self.loss_type)
+
+        return {'cross_entropy': ce_loss,
+                'accuracy': accuracy,
+                'average steps': avg_steps,
+                'loss_type': loss_type}
 
 
     def get_final_logits(self, logits_stacked, final_steps):
