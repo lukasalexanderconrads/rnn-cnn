@@ -15,7 +15,8 @@ class ClassificationDataset(Dataset):
         self.data_dim = self.input.size(1)
         self.n_classes = int(max(self.target) + 1)
 
-    def _get_data(self):
+    @staticmethod
+    def _get_data():
         pass
 
     def __getitem__(self, item):

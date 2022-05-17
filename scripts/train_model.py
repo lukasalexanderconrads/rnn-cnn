@@ -16,13 +16,18 @@ def main(config_path: Path):
     torch.manual_seed(config['seed'])
     print_experiment_info(config)
 
-    dataset = get_dataset(config['dataset'], device=device)
-
     print('loading data...')
+    if config.get('dataset', None) is not None:
+        # if dataset and dataloader are independent
+        dataset = get_dataset(config['dataset'], device=device)
+    else:
+        # if dataset is part of dataloader
+        dataset = None
+
     loader = get_data_loader(config['loader'], dataset)
 
     print('creating model...')
-    model = get_model(config['model'], device=device, in_dim=dataset.data_dim, out_dim=dataset.n_classes)
+    model = get_model(config['model'], device=device, in_dim=loader.data_dim, out_dim=loader.n_classes)
 
     optimizer = torch.optim.Adam(lr=.001, params=model.parameters())
 
@@ -61,7 +66,10 @@ def get_data_loader(config, dataset):
     module_name = config['module']
     class_name = config['name']
     args = config['args']
-    loader = create_instance(module_name, class_name, args, dataset)
+    if dataset is None:
+        loader = create_instance(module_name, class_name, args)
+    else:
+        loader = create_instance(module_name, class_name, args, dataset)
     return loader
 
 def print_experiment_info(config):

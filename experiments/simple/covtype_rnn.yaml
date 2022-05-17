@@ -24,7 +24,7 @@ loader:
   name: DataLoaderRandomSplit
   args:
     batch_size: 100
-    test_fraction: .1
+    valid_fraction: .1
 
 trainer:
   module: lab.trainer
