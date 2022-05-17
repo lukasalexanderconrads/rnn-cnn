@@ -2,7 +2,7 @@ import click
 from pathlib import Path
 import torch
 
-from src.utils import read_yaml, create_instance
+from lab.utils import read_yaml, create_instance
 
 
 @click.command()
@@ -13,22 +13,22 @@ def main(config_path: Path):
     config = read_yaml(config_path)
     name = config['name']
     device = torch.device(config['device'])
+    torch.manual_seed(config['seed'])
     print_experiment_info(config)
 
     dataset = get_dataset(config['dataset'], device=device)
 
+    print('loading data...')
+    loader = get_data_loader(config['loader'], dataset)
 
     print('creating model...')
     model = get_model(config['model'], device=device, in_dim=dataset.data_dim, out_dim=dataset.n_classes)
-
-    print('loading data...')
-    loader = get_data_loader(config['loader'], dataset)
 
     optimizer = torch.optim.Adam(lr=.001, params=model.parameters())
 
     print('training parameters...')
     trainer = get_trainer(config['trainer'], name, model, loader, optimizer)
-
+    trainer.save_config(config_path)
     trainer.train()
 
 

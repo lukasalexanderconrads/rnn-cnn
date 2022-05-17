@@ -2,26 +2,26 @@ name: iris/mlp
 device: cpu
 
 model:
-  module: src.models.simple
+  module: lab.models.simple
   name: MLP
   args:
     layer_dims: [4]
 
 dataset:
-  module: src.datasets
+  module: lab.datasets
   name: IrisDataset
   args:
 
 
 loader:
-  module: src.dataloaders
+  module: lab.dataloaders
   name: DataLoaderRandomSplit
   args:
     batch_size: 10
     test_fraction: .1
 
 trainer:
-  module: src.trainer
+  module: lab.trainer
   name: Trainer
   args:
     n_epochs: 400

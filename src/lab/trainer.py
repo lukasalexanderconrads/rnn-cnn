@@ -1,9 +1,12 @@
 import os
-from tqdm import tqdm
+import shutil
 from datetime import datetime
 
+import torch
+from tqdm import tqdm
+
 from torch.utils.tensorboard import SummaryWriter
-from src.utils import MetricAccumulator
+from lab.utils import MetricAccumulator
 
 class Trainer:
 
@@ -23,6 +26,7 @@ class Trainer:
 
         self.n_epochs = kwargs.get('n_epochs')
 
+        # schedulers
         self.loss_scheduler = kwargs.get('loss_scheduler', None)
         self.max_rec_scheduler = kwargs.get('max_rec_scheduler', None)
 
@@ -31,8 +35,15 @@ class Trainer:
         log_dir = kwargs.get('log_dir')
         log_dir = os.path.join(log_dir, name, timestamp)
         self.writer = SummaryWriter(log_dir=log_dir)
-
         self.metric_avg = MetricAccumulator()
+
+        # saving
+        self.bm_metric = kwargs.get('bm_metric', 'loss')
+        self.save_dir = kwargs.get('save_dir')
+        self.save_dir = os.path.join(self.save_dir, name, timestamp)
+        self.best_metric = None
+        if not os.path.exists(self.save_dir):
+            os.makedirs(self.save_dir)
 
     def train(self):
         for epoch in tqdm(range(self.n_epochs), desc='epochs'):
@@ -65,6 +76,7 @@ class Trainer:
             self.metric_avg.update(metrics)
         metrics = self.metric_avg.get_average()
         self.log(metrics, epoch, 'test')
+        self.save_model(metrics)
 
     def update_loss_type(self, epoch):
         epoch_frac = epoch / self.n_epochs
@@ -79,20 +91,28 @@ class Trainer:
         min = self.max_rec_scheduler['min']
         max = self.max_rec_scheduler['max']
         epoch_frac = epoch / self.n_epochs
-        max_rec = int(min + epoch_frac * (max - min))
+        max_rec = round(min + epoch_frac * (max - min))
         self.model.max_rec = max_rec
 
     def log(self, metrics, epoch, split='train'):
         for key, value in metrics.items():
             self.writer.add_scalar(f'{split}/{key}', value, epoch)
 
+    def save_model(self, metrics):
+        """
+        saves the model if it is better according to metric
+        """
+        metric = metrics[self.bm_metric]
+        if self.best_metric is None or self.best_metric < metric:
+            torch.save(self.model.state_dict(), os.path.join(self.save_dir, 'best_model.pth'))
+
     def get_timestamp(self):
         dt_obj = datetime.now()
-        timestamp = f'{dt_obj.month}{dt_obj.day}-{dt_obj.hour}{dt_obj.minute}{dt_obj.second}'
+        timestamp = dt_obj.strftime('%m%d-%H%M%S')
         return timestamp
 
-
-
+    def save_config(self, config_path):
+        shutil.copyfile(config_path, os.path.join(self.save_dir, 'config.yaml'))
 
 
 

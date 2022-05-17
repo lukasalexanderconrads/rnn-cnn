@@ -1,44 +1,46 @@
-name: covtype/rnn_fixed2
-device: cpu
+name: covtype/rnn/max-2-sched_th-.9_loss-final
+device: cuda:0
+seed: 1
 
 model:
-  module: src.models.simple
+  module: lab.models.simple
   name: RNN
-  args:             # layers: (in_dim, fc_dims[0]), ..., (fc_dims[-1], rnn_dim), (rnn_dim, rnn_dim), (rnn_dim, out_dim)
+  args:             # layers: (in_dim, fc_dims[0]), ..., (fc_dims[-1], rnn_dim), (rnn_dim, rnn_dim), (rnn_dim, head_dims[0]), ..., (head_dims[-1], out_dim)
     fc_dims: []
     rnn_dim: 50
     head_dims: []
-    threshold: 1             # threshold above which recurrence is stopped
+    threshold: .9             # threshold above which recurrence is stopped
     max_rec: 2               # maximum number of recurrences
-    loss_type: final
+    loss_type: final          # final, every, (first)
     skip_connections: false   # if skip connection is used in recurrent layer
 
 dataset:
-  module: src.datasets
+  module: lab.datasets
   name: CovertypeDataset
   args:
 
-
 loader:
-  module: src.dataloaders
+  module: lab.dataloaders
   name: DataLoaderRandomSplit
   args:
     batch_size: 100
     test_fraction: .1
 
 trainer:
-  module: src.trainer
+  module: lab.trainer
   name: Trainer
   args:
     n_epochs: 100
+    bm_metric: loss
     log_dir: results
+    save_dir: results
 
     #loss_scheduler: None # fraction of total training that a given loss type is active
       #first_step: .0    # loss is computed for the first step's output
       #every_step: .0    # loss is computed for every step's output
       # remaining time:   loss is computed for the final step's output
 
-    #max_rec_scheduler: # linear increase from min to max
-      #min: 1
-      #max: 10
+    max_rec_scheduler: # linear increase from min to max
+      min: 1
+      max: 2
 

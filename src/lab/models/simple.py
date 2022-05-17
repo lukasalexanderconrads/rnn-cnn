@@ -1,8 +1,8 @@
 import torch
 from torch import nn
 
-from src.models.base import Model
-from src.utils import create_mlp
+from lab.models.base import Model
+from lab.utils import create_mlp
 
 class MLP(Model):
     def __init__(self, in_dim: int, out_dim: int, **kwargs):
@@ -117,7 +117,7 @@ class RNN(MLP):
 
         h = self.fc_layers(input)
         # store the step index where a logit was above the threshold for the first time
-        final_steps = torch.full((input.size(0),), self.max_rec-1)
+        final_steps = torch.full((input.size(0),), self.max_rec-1).to(self.device)
         logits_list = []
         for step in range(self.max_rec):
             # recurrent layer
