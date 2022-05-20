@@ -5,7 +5,7 @@ from lab.models.base import Model
 from lab.utils import create_mlp
 
 class MLP(Model):
-    def __init__(self, in_dim: int, out_dim: int, **kwargs):
+    def __init__(self, in_dim, out_dim: int, **kwargs):
         """
         Standard MLP class
         kwargs:
@@ -13,6 +13,7 @@ class MLP(Model):
             layer_dims: list of number of neurons in each layer
         """
         super().__init__(**kwargs)
+
         layer_dims = kwargs.get('layer_dims')
         layer_dims = [in_dim] + layer_dims + [out_dim]
 
@@ -238,11 +239,94 @@ class RNN(MLP):
         return valid_logits, valid_target
 
 
+class SingleLayerRNN(RNN):
+    def __init__(self, in_dim: int, out_dim: int, **kwargs):
+        """
+        MLP with feed forward layers and recurrent layers
+        :param kwargs:
+        """
+        super(MLP, self).__init__(**kwargs)
+        assert in_dim == out_dim, f'in_dim ({in_dim}) has to equal out_dim ({out_dim})'
+
+        # define network architecture
+        self.layer = nn.Linear(in_dim, out_dim)
+
+        # get recurrency parameters
+        self.max_rec = kwargs.get('max_rec', 10)
+        self.threshold = kwargs.get('threshold', .9)
+        self.skip_connections = kwargs.get('skip_connections', False)
+        self.loss_type = kwargs.get('loss_type', 'final')  # first, every, final
+
+        print('model layer:')
+        print(self.layer)
 
 
+    def forward(self, input):
+        """
+        :param input: tensor [batch_size, input_dim]
+        :return: output: tensor [batch_size, output_dim]
+        """
+        if input.dim() == 1:
+            input = input.unsqueeze(0)
 
+        h = input
+        # store the step index where a logit was above the threshold for the first time
+        final_steps = torch.full((input.size(0),), self.max_rec - 1).to(self.device)
+        logits_list = []
+        for step in range(self.max_rec):
+            # recurrent layer
+            h_new = self.layer(h)
+            h = h + h_new if self.skip_connections else h_new
+            # get class probs
+            logits_list.append(h)
 
+            # update final_steps
+            probs = nn.functional.softmax(h, dim=1)  # [batch_size, n_classes]
+            done_mask = torch.logical_and(torch.max(probs, dim=1).values > self.threshold,
+                                          final_steps == self.max_rec - 1)
+            final_steps[done_mask] = step  # [batch_size]
 
+            h = nn.functional.relu(h)
+            # break if all examples have finished
+            if torch.all(final_steps != self.max_rec - 1):
+                break
+
+        logits_stacked = torch.stack(logits_list)  # [max_rec, batch_size, n_classes]
+
+        return logits_stacked, final_steps
+
+    def evaluate(self, input):
+        """
+                :param input: tensor [batch_size, input_dim]
+                :return: output: tensor [batch_size, output_dim]
+                """
+        if input.dim() == 1:
+            input = input.unsqueeze(0)
+
+        h = input
+        # store the step index where a logit was above the threshold for the first time
+        final_steps = torch.full((input.size(0),), self.max_rec - 1).to(self.device)
+        logits_list = []
+        for step in range(self.max_rec):
+            # recurrent layer
+            h_new = self.layer(h)
+            h = h + h_new if self.skip_connections else h_new
+            # get class probs
+            logits_list.append(h)
+
+            # update final_steps
+            probs = nn.functional.softmax(h, dim=1)  # [batch_size, n_classes]
+            done_mask = torch.logical_and(torch.max(probs, dim=1).values > self.threshold,
+                                          final_steps == self.max_rec - 1)
+            final_steps[done_mask] = step  # [batch_size]
+
+            h = nn.functional.relu(h)
+            # break if all examples have finished
+            if torch.all(final_steps != self.max_rec - 1):
+                break
+
+        logits_stacked = torch.stack(logits_list)  # [max_rec, batch_size, n_classes]
+        return self.get_final_logits(logits_stacked, final_steps), final_steps
 
 if __name__ == '__main__':
     mlp = MLP([10, 20, 20, 20, 5], device=torch.device('cpu'))
