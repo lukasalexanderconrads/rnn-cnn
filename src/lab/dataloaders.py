@@ -2,6 +2,7 @@ import torch
 from torch.utils.data import DataLoader, Dataset, random_split
 from torchvision.datasets import CIFAR10
 from torchvision.transforms import ToTensor
+from lab.datasets import SyntheticDataset
 
 
 class DataLoaderRandomSplit:
@@ -39,7 +40,19 @@ class DataLoaderCifar:
         self.data_dim = self.test.dataset.data[0].shape
         self.n_classes = len(self.test.dataset.classes)
 
+class DataLoaderSynthetic:
+    def __init__(self, valid_fraction: float = .1, batch_size: int = 1, **kwargs):
+        self.device = torch.device(kwargs.get('device', 'cpu'))
+        self.n_samples = float(kwargs.get('n_samples', 1.0e5))
+        valid_len = self.n_samples * valid_fraction
+        train_len = self.n_samples - valid_len*2
 
+        self.train = DataLoader(SyntheticDataset(n_samples=train_len, device=self.device), batch_size=batch_size, shuffle=True)
+        self.valid = DataLoader(SyntheticDataset(n_samples=valid_len, device=self.device), batch_size=batch_size, shuffle=True)
+        self.test = DataLoader(SyntheticDataset(n_samples=valid_len, device=self.device), batch_size=batch_size, shuffle=True)
+
+        self.data_dim = self.train.dataset.data_dim
+        self.n_classes = self.train.dataset.n_classes
 
 if __name__ == '__main__':
     print(DataLoaderCifar())
