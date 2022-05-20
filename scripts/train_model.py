@@ -2,7 +2,7 @@ import click
 from pathlib import Path
 import torch
 
-from lab.utils import read_yaml, create_instance
+from lab.utils import read_yaml, create_instance, get_model, get_trainer, get_dataset, get_data_loader
 
 
 @click.command()
@@ -37,46 +37,10 @@ def main(config_path: Path):
     trainer.train()
 
 
-def get_trainer(config, name, model, loader, optimizer):
-    module_name = config['module']
-    class_name = config['name']
-    args = config['args']
-    trainer = create_instance(module_name, class_name, args, name, model, loader, optimizer)
-    return trainer
-
-
-def get_model(config, device, in_dim, out_dim):
-    module_name = config['module']
-    class_name = config['name']
-    args = config['args']
-    args.update({'device': device})
-    model = create_instance(module_name, class_name, args, in_dim, out_dim)
-    return model
-
-
-def get_dataset(config, device):
-    module_name = config['module']
-    class_name = config['name']
-    args = config['args']
-    dataset = create_instance(module_name, class_name, args, device)
-    return dataset
-
-
-def get_data_loader(config, dataset):
-    module_name = config['module']
-    class_name = config['name']
-    args = config['args']
-    if dataset is None:
-        loader = create_instance(module_name, class_name, args)
-    else:
-        loader = create_instance(module_name, class_name, args, dataset)
-    return loader
-
 def print_experiment_info(config):
     print('-' * 10,
           '\nexperiment:', config['name'],
           '\nmodel name:', config['model']['name'],
-          '\ndata set:', config['dataset']['name'],
           '\n', '-' * 10)
 
 
