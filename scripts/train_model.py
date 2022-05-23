@@ -3,6 +3,7 @@ from pathlib import Path
 import torch
 
 from lab.utils import read_yaml, create_instance, get_model, get_trainer, get_dataset, get_data_loader
+from lab.expand_config import expand_config
 
 
 @click.command()
@@ -10,31 +11,30 @@ from lab.utils import read_yaml, create_instance, get_model, get_trainer, get_da
 
 
 def main(config_path: Path):
-    config = read_yaml(config_path)
-    name = config['name']
-    device = torch.device(config['device'])
-    torch.manual_seed(config['seed'])
-    print_experiment_info(config)
+    configs = read_yaml(config_path)
+    torch.manual_seed(configs['seed'])
 
-    print('loading data...')
-    if config.get('dataset', None) is not None:
-        # if dataset and dataloader are independent
-        dataset = get_dataset(config['dataset'], device=device)
-    else:
-        # if dataset is part of dataloader
-        dataset = None
+    config_list = expand_config(configs)
 
-    loader = get_data_loader(config['loader'], dataset)
+    for config in config_list:
+        name = config['name']
 
-    print('creating model...')
-    model = get_model(config['model'], device=device, in_dim=loader.data_dim, out_dim=loader.n_classes)
+        device = torch.device(config['device'])
 
-    optimizer = torch.optim.Adam(lr=.001, params=model.parameters())
+        print_experiment_info(config)
 
-    print('training parameters...')
-    trainer = get_trainer(config['trainer'], name, model, loader, optimizer)
-    trainer.save_config(config_path)
-    trainer.train()
+        print('loading data...')
+        loader = get_data_loader(config['loader'], device)
+
+        print('creating model...')
+        model = get_model(config['model'], device=device, in_dim=loader.data_dim, out_dim=loader.n_classes)
+
+        optimizer = torch.optim.Adam(lr=.001, params=model.parameters())
+
+        print('training parameters...')
+        trainer = get_trainer(config['trainer'], name, model, loader, optimizer)
+        trainer.save_config(config)
+        trainer.train()
 
 
 def print_experiment_info(config):

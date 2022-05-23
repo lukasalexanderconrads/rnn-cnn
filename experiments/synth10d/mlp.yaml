@@ -1,31 +1,30 @@
-name: covtype/mlp/layers-3
-device: cpu
+name: synth10d/mlp/
+device: cuda:0
+num_runs: 5
 seed: 1
 
 model:
   module: lab.models.simple
   name: MLP
   args:                   # layers: (in_dim, layer_dims[0]), ..., (layer_dims[-1], out_dim)
-    layer_dims: [50, 50, 50]
-
-dataset:
-  module: lab.datasets
-  name: CovertypeDataset
-  args:
-
+    layer_dims: [!!python/tuple [5, 5], !!python/tuple [5, 5, 5]]
 
 loader:
   module: lab.dataloaders
-  name: DataLoaderRandomSplit
+  name: DataLoaderSyntheticHard
   args:
     batch_size: 100
-    test_fraction: .1
+    valid_fraction: .1
+    n_samples: 1.0e5
+    n_features: 10
+    n_clusters_per_class: 5
+    seed: 1
 
 trainer:
   module: lab.trainer
   name: Trainer
   args:
-    n_epochs: 100
+    n_epochs: 300
     bm_metric: cross_entropy
     log_dir: results
-    save_dir: saved
+    save_dir: results

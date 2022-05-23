@@ -6,15 +6,13 @@ from lab.utils import read_yaml, get_data_loader, get_model, get_dataset
 torch.set_grad_enabled(False)
 
 ### load the model ###
-def load_model(result_dir, model_name, model_version='best_model.pth'):
+def load_model(result_dir, model_name, model_version='best_model.pth', device='cuda:0'):
     model_path = os.path.join(result_dir, model_name, model_version)
     state_dict = torch.load(model_path)
 
     config_path = os.path.join(result_dir, model_name, 'config.yaml')
     config = read_yaml(config_path)
 
-    name = config['name']
-    device = torch.device(config['device'])
     torch.manual_seed(config['seed'])
 
     loader = get_data_loader(config['loader'], None)
@@ -24,5 +22,8 @@ def load_model(result_dir, model_name, model_version='best_model.pth'):
     model.load_state_dict(state_dict)
 
     return model, loader
+
+
+
 
 

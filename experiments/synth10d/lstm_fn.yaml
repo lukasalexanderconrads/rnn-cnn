@@ -1,36 +1,39 @@
-name: covtype/rnn/max-2-sched_th-.9_loss-final
+name: synth10d/lstm_fn/
 device: cuda:0
+num_runs: 5
 seed: 1
 
 model:
-  module: lab.models.simple
-  name: RNN
-  args:             # layers: (in_dim, fc_dims[0]), ..., (fc_dims[-1], rnn_dim), (rnn_dim, rnn_dim), (rnn_dim, head_dims[0]), ..., (head_dims[-1], out_dim)
-    fc_dims: []
-    rnn_dim: 50
-    head_dims: []
+  module: lab.models.recurrence_function
+  name: LearnableLSTM
+  args:
+    fc_dims: !!python/tuple []
+    lstm_dim: [5]
+    head_dims: !!python/tuple []
     threshold: .9             # threshold above which recurrence is stopped
-    max_rec: 2               # maximum number of recurrences
+    max_rec: [2]               # maximum number of recurrences
     loss_type: final          # final, every, (first)
     skip_connections: false   # if skip connection is used in recurrent layer
 
-dataset:
-  module: lab.datasets
-  name: CovertypeDataset
-  args:
+    rec_fn_layers: [ !!python/tuple [ 5 ] ]
+
 
 loader:
   module: lab.dataloaders
-  name: DataLoaderRandomSplit
+  name: DataLoaderSyntheticHard
   args:
     batch_size: 100
     valid_fraction: .1
+    n_samples: 1.0e5
+    n_features: 10
+    n_clusters_per_class: 5
+    seed: 1
 
 trainer:
   module: lab.trainer
   name: Trainer
   args:
-    n_epochs: 100
+    n_epochs: 300
     bm_metric: loss
     log_dir: results
     save_dir: results
@@ -40,7 +43,7 @@ trainer:
       #every_step: .0    # loss is computed for every step's output
       # remaining time:   loss is computed for the final step's output
 
-    max_rec_scheduler: # linear increase from min to max
-      min: 1
-      max: 2
+    #max_rec_scheduler: # linear increase from min to max
+      #min: 1
+      #max: 2
 

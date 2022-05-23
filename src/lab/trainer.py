@@ -4,6 +4,7 @@ from datetime import datetime
 
 import torch
 from tqdm import tqdm
+import yaml
 
 from torch.utils.tensorboard import SummaryWriter
 from lab.utils import MetricAccumulator
@@ -111,8 +112,9 @@ class Trainer:
         timestamp = dt_obj.strftime('%m%d-%H%M%S')
         return timestamp
 
-    def save_config(self, config_path):
-        shutil.copyfile(config_path, os.path.join(self.save_dir, 'config.yaml'))
+    def save_config(self, config):
+        with open(os.path.join(self.save_dir, 'config.yaml'), 'w') as file:
+            yaml.dump(config, file)
 
 
 

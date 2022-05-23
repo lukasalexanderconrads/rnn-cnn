@@ -1,0 +1,27 @@
+name: synth_gauss/mlp/
+device: cuda:0
+num_runs: 5
+seed: 1
+
+model:
+  module: lab.models.simple
+  name: MLP
+  args:                   # layers: (in_dim, layer_dims[0]), ..., (layer_dims[-1], out_dim)
+    layer_dims: [!!python/tuple [2, 2]]
+
+loader:
+  module: lab.dataloaders
+  name: DataLoaderSyntheticGaussian
+  args:
+    batch_size: 100
+    valid_fraction: .1
+    n_samples: 1.0e5
+
+trainer:
+  module: lab.trainer
+  name: Trainer
+  args:
+    n_epochs: 100
+    bm_metric: cross_entropy
+    log_dir: results
+    save_dir: results

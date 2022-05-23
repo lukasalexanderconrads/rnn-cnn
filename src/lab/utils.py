@@ -12,7 +12,7 @@ def read_yaml(path):
     """
     with open(path, 'r') as file:
         try:
-            parsed_yaml = yaml.safe_load(file)
+            parsed_yaml = yaml.load(file, yaml.Loader)
         except yaml.YAMLError as exc:
             print(exc)
     file.close()
@@ -89,14 +89,11 @@ def get_dataset(config, device):
     return dataset
 
 
-def get_data_loader(config, dataset):
+def get_data_loader(config, device):
     module_name = config['module']
     class_name = config['name']
     args = config['args']
-    if dataset is None:
-        loader = create_instance(module_name, class_name, args)
-    else:
-        loader = create_instance(module_name, class_name, args, dataset)
+    loader = create_instance(module_name, class_name, args, device)
     return loader
 
 

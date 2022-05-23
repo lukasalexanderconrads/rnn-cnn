@@ -1,19 +1,22 @@
-name: synth/singlelayer_rnn/maxrec-2
-device: cpu
+name: synth/rnn/maxrec-1
+device: cuda:0
 seed: 1
 
 model:
   module: lab.models.simple
-  name: SingleLayerRNN
+  name: RNN
   args:
+    fc_dims: [ ]
+    rnn_dim: 2
+    head_dims: [ ]
     threshold: .9             # threshold above which recurrence is stopped
-    max_rec: 2               # maximum number of recurrences
+    max_rec: 1               # maximum number of recurrences
     loss_type: final          # final, every, (first)
     skip_connections: false   # if skip connection is used in recurrent layer
 
 loader:
   module: lab.dataloaders
-  name: DataLoaderSynthetic
+  name: DataLoaderSyntheticGaussian
   args:
     batch_size: 100
     valid_fraction: .1

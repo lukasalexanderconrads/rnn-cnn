@@ -1,17 +1,17 @@
-name: synth_hard/rnn_fn/
+name: synth_hard/rnn/maxrec-2
 device: cuda:0
-num_runs: 1
-seed: 1
+seed: [1, 2, 3, 4, 5]
 
 model:
-  module: lab.models.recurrence_function
-  name: LearnableRNN
+  module: lab.models.simple
+  name: RNN
   args:
-    fc_dims: !!python/tuple []
+    fc_dims: []
     rnn_dim: 2
-    head_dims: !!python/tuple []
-    max_rec: [2, 3, 4]               # maximum number of recurrences
-    rec_fn_layers: [!!python/tuple [2]]
+    head_dims: [ ]
+    threshold: .9             # threshold above which recurrence is stopped
+    max_rec: 2               # maximum number of recurrences
+    loss_type: final          # final, every, (first)
     skip_connections: false   # if skip connection is used in recurrent layer
 
 loader:
@@ -21,8 +21,6 @@ loader:
     batch_size: 100
     valid_fraction: .1
     n_samples: 1.0e5
-    n_features: 2
-    seed: 1
 
 trainer:
   module: lab.trainer
@@ -42,4 +40,3 @@ trainer:
       #min: 1
       #max: 2
 
-#TODO: add tau scheduler for gumbel softmax

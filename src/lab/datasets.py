@@ -52,16 +52,12 @@ class CovertypeDataset(ClassificationDataset):
         target = torch.tensor(target, dtype=torch.int64)
         return input, target
 
-class SyntheticDataset(ClassificationDataset):
+class SyntheticDatasetGaussian(ClassificationDataset):
     def __init__(self, device, n_samples=10e5):
         self.n_samples = n_samples
-        super(SyntheticDataset, self).__init__(device)
+        super(SyntheticDatasetGaussian, self).__init__(device)
 
     def _get_data(self):
-        #input, target = make_classification(n_samples=int(self.n_samples), n_features=2,
-        #                                    n_informative=2, n_redundant=0,
-        #                                    random_state=1)
-
         class1 = torch.randn(int(self.n_samples // 2 - self.n_samples // 10), 2) - 2
         class1_cluster2 = torch.randn(int(self.n_samples // 10), 2) / 10 + 5
         class2 = torch.randn(int(self.n_samples // 2), 2) + 2
@@ -71,10 +67,27 @@ class SyntheticDataset(ClassificationDataset):
         target = target.type(torch.int64)
         return input, target
 
+class SyntheticDatasetHard(ClassificationDataset):
+    def __init__(self, device, **kwargs):
+        self.n_samples = float(kwargs.get('n_samples', 1e5))
+        self.n_clusters_per_class = kwargs.get('n_clusters_per_class', 2)
+        self.n_features = kwargs.get('n_features', 2)
+        self.seed = kwargs.get('seed', 1)
+        super(SyntheticDatasetHard, self).__init__(device)
+
+    def _get_data(self):
+        input, target = make_classification(n_samples=int(self.n_samples), n_features=self.n_features,
+                                            n_informative=self.n_features, n_redundant=0,
+                                            n_clusters_per_class=self.n_clusters_per_class,
+                                            random_state=self.seed)
+        input = torch.tensor(input, dtype=torch.float32)
+        target = torch.tensor(target, dtype=torch.int64)
+        return input, target
+
 
 if __name__ == '__main__':
 
-    ds = SyntheticDataset(torch.device('cpu'), n_samples=10e2)
+    ds = SyntheticDatasetHard(torch.device('cpu'), n_samples=10e2)
 
     samples = ds[range(len(ds))]
 
