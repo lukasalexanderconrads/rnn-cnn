@@ -1,13 +1,13 @@
-name: synth10d/rnn/
+name: synth10d/customrnn_cv/
 device: cuda:0
-num_runs: 5
+num_runs: 1
 seed: 1
 
 model:
   module: lab.models.simple
-  name: RNN
+  name: CustomRNN
   args:
-    fc_dims: !!python/tuple []
+    fc_dims: [!!python/tuple [5]]
     rnn_dim: 5
     head_dims: !!python/tuple []
     threshold: .9             # threshold above which recurrence is stopped
@@ -16,21 +16,22 @@ model:
     skip_connections: false   # if skip connection is used in recurrent layer
 
 loader:
-  module: lab.data.dataloaders
-  name: DataLoaderSyntheticHard
+  module: lab.data.dataloaders_crossval
+  name: DataLoaderSyntheticHardCV
   args:
     batch_size: 100
-    valid_fraction: .1
     n_samples: 1.0e5
+    n_splits: 10
     n_features: 10
     n_clusters_per_class: 5
     seed: 1
 
 trainer:
   module: lab.trainer
-  name: Trainer
+  name: CrossValidationTrainer
   args:
-    n_epochs: 300
+    n_epochs: 1000
+    early_stop_criterion: 200 # if no improvement over this many epochs, stop training
     bm_metric: loss
     log_dir: results
     save_dir: results
@@ -40,7 +41,7 @@ trainer:
       #every_step: .0    # loss is computed for every step's output
       # remaining time:   loss is computed for the final step's output
 
-    #max_rec_scheduler: # linear increase from min to max
-      #min: 1
-      #max: 2
+    max_rec_scheduler: # step wise increase from min to max
+      step_length: 50 # how many epochs is one step
+
 

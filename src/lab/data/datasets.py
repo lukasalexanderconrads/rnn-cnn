@@ -1,8 +1,9 @@
 import torch
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset
 from sklearn.datasets import load_iris, fetch_covtype
 from sklearn.datasets import make_classification
 from matplotlib import pyplot as plt
+from lab.data.utils import make_spiral
 
 
 class ClassificationDataset(Dataset):
@@ -19,7 +20,7 @@ class ClassificationDataset(Dataset):
 
     @staticmethod
     def _get_data():
-        pass
+        raise NotImplementedError('_get_data() is not implemented')
 
     def __getitem__(self, item):
         return {'input': self.input[item],
@@ -69,17 +70,29 @@ class SyntheticDatasetGaussian(ClassificationDataset):
 
 class SyntheticDatasetHard(ClassificationDataset):
     def __init__(self, device, **kwargs):
-        self.n_samples = float(kwargs.get('n_samples', 1e5))
+        self.n_classes = kwargs.get('n_classes', 2)
         self.n_clusters_per_class = kwargs.get('n_clusters_per_class', 2)
         self.n_features = kwargs.get('n_features', 2)
         self.seed = kwargs.get('seed', 1)
         super(SyntheticDatasetHard, self).__init__(device)
 
     def _get_data(self):
-        input, target = make_classification(n_samples=int(self.n_samples), n_features=self.n_features,
+        input, target = make_classification(n_samples=int(1e5), n_features=self.n_features,
                                             n_informative=self.n_features, n_redundant=0,
+                                            n_classes=self.n_classes,
                                             n_clusters_per_class=self.n_clusters_per_class,
                                             random_state=self.seed)
+        input = torch.tensor(input, dtype=torch.float32)
+        target = torch.tensor(target, dtype=torch.int64)
+        return input, target
+
+class SpiralDataset(ClassificationDataset):
+    def __init__(self, device, **kwargs):
+        self.seed = kwargs.get('seed', 1)
+        super(SpiralDataset, self).__init__(device)
+
+    def _get_data(self):
+        input, target = make_spiral(int(1e5), seed=self.seed)
         input = torch.tensor(input, dtype=torch.float32)
         target = torch.tensor(target, dtype=torch.int64)
         return input, target
@@ -87,7 +100,7 @@ class SyntheticDatasetHard(ClassificationDataset):
 
 if __name__ == '__main__':
 
-    ds = SyntheticDatasetHard(torch.device('cpu'), n_samples=10e2)
+    ds = SpiralDataset(torch.device('cpu'), n_samples=10e2)
 
     samples = ds[range(len(ds))]
 

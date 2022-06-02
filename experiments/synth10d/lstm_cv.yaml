@@ -1,37 +1,37 @@
-name: synth10d/rnn/
+name: synth10d/lstm_cv/
 device: cuda:0
-num_runs: 5
+num_runs: 1
 seed: 1
 
 model:
   module: lab.models.simple
-  name: RNN
+  name: LSTM
   args:
     fc_dims: !!python/tuple []
-    rnn_dim: 5
+    lstm_dim: [2, 3]
     head_dims: !!python/tuple []
     threshold: .9             # threshold above which recurrence is stopped
-    max_rec: [2]               # maximum number of recurrences
+    max_rec: [2, 3]               # maximum number of recurrences
     loss_type: final          # final, every, (first)
     skip_connections: false   # if skip connection is used in recurrent layer
 
 loader:
-  module: lab.data.dataloaders
-  name: DataLoaderSyntheticHard
+  module: lab.data.dataloaders_crossval
+  name: DataLoaderSyntheticHardCV
   args:
     batch_size: 100
-    valid_fraction: .1
     n_samples: 1.0e5
+    n_splits: 10
     n_features: 10
     n_clusters_per_class: 5
     seed: 1
 
 trainer:
   module: lab.trainer
-  name: Trainer
+  name: CrossValidationTrainer
   args:
-    n_epochs: 300
-    bm_metric: loss
+    n_epochs: 500
+    bm_metric: cross_entropy
     log_dir: results
     save_dir: results
 

@@ -1,29 +1,27 @@
-name: synth_hard/mlp/
+name: spiral/mlp_cv/
 device: cuda:0
-num_runs: 5
+num_runs: 1
 seed: 1
 
 model:
   module: lab.models.simple
   name: MLP
   args:                   # layers: (in_dim, layer_dims[0]), ..., (layer_dims[-1], out_dim)
-    layer_dims: [!!python/tuple [2, 2], !!python/tuple [2, 2, 2]]
+    layer_dims: [!!python/tuple [5, 5, 5]]
 
 loader:
-  module: lab.data.dataloaders
-  name: DataLoaderSyntheticHard
+  module: lab.data.dataloaders_crossval
+  name: DataLoaderSpiralCV
   args:
     batch_size: 100
-    valid_fraction: .1
-    n_samples: 1.0e5
-    n_features: 2
     seed: 1
 
 trainer:
   module: lab.trainer
-  name: Trainer
+  name: CrossValidationTrainer
   args:
-    n_epochs: 100
+    n_epochs: 500
     bm_metric: cross_entropy
+    early_stop_criterion: 200 # if no improvement over this many epochs, stop training
     log_dir: results
     save_dir: results

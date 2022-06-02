@@ -10,7 +10,7 @@ model:
     layer_dims: [!!python/tuple [2, 2]]
 
 loader:
-  module: lab.dataloaders
+  module: lab.data.dataloaders
   name: DataLoaderSyntheticGaussian
   args:
     batch_size: 100

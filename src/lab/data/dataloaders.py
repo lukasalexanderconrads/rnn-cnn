@@ -2,7 +2,7 @@ import torch
 from torch.utils.data import DataLoader, Dataset, random_split
 from torchvision.datasets import CIFAR10
 from torchvision.transforms import ToTensor
-from lab.datasets import SyntheticDatasetGaussian, SyntheticDatasetHard
+from lab.data.datasets import SyntheticDatasetGaussian, SyntheticDatasetHard
 
 
 class DataLoaderRandomSplit:
@@ -67,6 +67,7 @@ class DataLoaderSyntheticHard:
 
         self.data_dim = self.train.dataset.dataset.data_dim
         self.n_classes = self.train.dataset.dataset.n_classes
+
 
 if __name__ == '__main__':
     print(DataLoaderCifar())

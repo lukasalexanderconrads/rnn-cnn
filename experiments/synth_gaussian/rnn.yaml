@@ -15,7 +15,7 @@ model:
     skip_connections: false   # if skip connection is used in recurrent layer
 
 loader:
-  module: lab.dataloaders
+  module: lab.data.dataloaders
   name: DataLoaderSyntheticGaussian
   args:
     batch_size: 100
