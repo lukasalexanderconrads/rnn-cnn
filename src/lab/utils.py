@@ -60,23 +60,23 @@ def create_mlp(layer_dims, output_activation=False):
     for layer_idx in range(n_layers - 1):
         layers.append(torch.nn.Linear(layer_dims[layer_idx], layer_dims[layer_idx + 1]))
         if layer_idx != n_layers - 2 or output_activation:
-            layers.append(torch.nn.ReLU())
+            layers.append(torch.nn.LeakyReLU())
 
     return torch.nn.Sequential(*layers)
 
-def get_trainer(config, name, model, loader, optimizer):
-    module_name = config['module']
-    class_name = config['name']
-    args = config['args']
-    trainer = create_instance(module_name, class_name, args, name, model, loader, optimizer)
+def get_trainer(config):
+    module_name = config['trainer']['module']
+    class_name = config['trainer']['name']
+    args = config['trainer']['args']
+    trainer = create_instance(module_name, class_name, args, config)
     return trainer
 
 
-def get_model(config, device, in_dim, out_dim):
-    module_name = config['module']
-    class_name = config['name']
-    args = config['args']
-    args.update({'device': device})
+def get_model(config, in_dim, out_dim):
+    module_name = config['model']['module']
+    class_name = config['model']['name']
+    args = config['model']['args']
+    args.update({'device': config['device']})
     model = create_instance(module_name, class_name, args, in_dim, out_dim)
     return model
 
@@ -89,13 +89,15 @@ def get_dataset(config, device):
     return dataset
 
 
-def get_data_loader(config, device):
-    module_name = config['module']
-    class_name = config['name']
-    args = config['args']
-    loader = create_instance(module_name, class_name, args, device)
+def get_data_loader(config):
+    module_name = config['loader']['module']
+    class_name = config['loader']['name']
+    args = config['loader']['args']
+    loader = create_instance(module_name, class_name, args, config['device'])
     return loader
 
+def reset_parameters(model):
+    model.apply(lambda w: w.reset_parameters() if hasattr(w, 'reset_parameters') else None)
 
 if __name__ == '__main__':
 

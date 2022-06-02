@@ -17,23 +17,11 @@ def main(config_path: Path):
     config_list = expand_config(configs)
 
     for config in config_list:
-        name = config['name']
-
-        device = torch.device(config['device'])
 
         print_experiment_info(config)
 
-        print('loading data...')
-        loader = get_data_loader(config['loader'], device)
-
-        print('creating model...')
-        model = get_model(config['model'], device=device, in_dim=loader.data_dim, out_dim=loader.n_classes)
-
-        optimizer = torch.optim.Adam(lr=.001, params=model.parameters())
-
         print('training parameters...')
-        trainer = get_trainer(config['trainer'], name, model, loader, optimizer)
-        trainer.save_config(config)
+        trainer = get_trainer(config)
         trainer.train()
 
 
