@@ -4,6 +4,7 @@ from sklearn.datasets import load_iris, fetch_covtype
 from sklearn.datasets import make_classification
 from matplotlib import pyplot as plt
 from lab.data.utils import make_spiral
+import torchvision
 
 
 class ClassificationDataset(Dataset):
@@ -93,6 +94,21 @@ class SpiralDataset(ClassificationDataset):
 
     def _get_data(self):
         input, target = make_spiral(int(1e5), seed=self.seed)
+        input = torch.tensor(input, dtype=torch.float32)
+        target = torch.tensor(target, dtype=torch.int64)
+        return input, target
+
+class MNISTDataset(ClassificationDataset):
+    def __init__(self, device, **kwargs):
+        self.seed = kwargs.get('seed', 1)
+        super(MNISTDataset, self).__init__(device)
+
+    def _get_data(self):
+        dataset = torchvision.datasets.MNIST('/files/', train=True, download=True,
+                                             transform=torchvision.transforms.Compose([torchvision.transforms.ToTensor(),
+                                                                                       torchvision.transforms.Normalize((0.1307,), (0.3081,))]))
+        input = dataset.data
+        target = dataset.targets
         input = torch.tensor(input, dtype=torch.float32)
         target = torch.tensor(target, dtype=torch.int64)
         return input, target

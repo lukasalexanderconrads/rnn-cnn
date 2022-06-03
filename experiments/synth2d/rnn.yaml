@@ -1,4 +1,4 @@
-name: synth_hard/rnn/maxrec-2
+name: synth2d/rnn/maxrec-2
 device: cuda:0
 seed: [1, 2, 3, 4, 5]
 

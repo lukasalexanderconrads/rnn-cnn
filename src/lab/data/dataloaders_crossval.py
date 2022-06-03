@@ -1,6 +1,6 @@
 import torch
 from torch.utils.data import DataLoader, Subset
-from lab.data.datasets import SyntheticDatasetHard, SpiralDataset
+from lab.data.datasets import SyntheticDatasetHard, SpiralDataset, CovertypeDataset
 from sklearn.model_selection import StratifiedKFold
 
 class DataLoaderCV:
@@ -41,3 +41,10 @@ class DataLoaderSpiralCV(DataLoaderCV):
 
     def _get_dataset(self, device, **kwargs):
         return SpiralDataset(device, **kwargs)
+
+class DataLoaderCovertypeCV(DataLoaderCV):
+    def __init__(self, device: torch.device, batch_size: int = 1, **kwargs):
+        super(DataLoaderCovertypeCV, self).__init__(device, batch_size, **kwargs)
+
+    def _get_dataset(self, device, **kwargs):
+        return CovertypeDataset(device)

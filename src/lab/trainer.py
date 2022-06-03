@@ -7,7 +7,7 @@ from tqdm import tqdm
 import yaml
 
 from torch.utils.tensorboard import SummaryWriter
-from lab.utils import MetricAccumulator, reset_parameters, get_data_loader, get_model
+from lab.utils import MetricAccumulator, reset_parameters, get_data_loader, get_model, create_instance
 
 class Trainer:
 
@@ -26,7 +26,8 @@ class Trainer:
         self.model = get_model(config,
                           in_dim=self.data_loader.data_dim,
                           out_dim=self.data_loader.n_classes)
-        self.optimizer = torch.optim.Adam(lr=.001, params=self.model.parameters())
+        self.optimizer = create_instance(config['optimizer']['module'], config['optimizer']['name'],
+                                         config['optimizer']['args'], self.model.parameters())
 
         self.n_epochs = kwargs.get('n_epochs')
 
@@ -172,7 +173,8 @@ class CrossValidationTrainer(Trainer):
         self.model = get_model(self.config,
                                in_dim=self.data_loader.data_dim,
                                out_dim=self.data_loader.n_classes)
-        self.optimizer = torch.optim.Adam(lr=.001, params=self.model.parameters())
+        self.optimizer = create_instance(self.config['optimizer']['module'], self.config['optimizer']['name'],
+                                         self.config['optimizer']['args'], self.model.parameters())
 
         # logging
         timestamp = self.get_timestamp()

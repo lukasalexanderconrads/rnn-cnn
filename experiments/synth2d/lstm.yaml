@@ -1,35 +1,33 @@
-name: synth_hard/rnn_cv/sched5
+name: synth2d/lstm/maxrec-1
 device: cuda:0
-num_runs: 1
 seed: 1
 
 model:
   module: lab.models.simple
-  name: RNN
+  name: LSTM
   args:
-    fc_dims: !!python/tuple []
-    rnn_dim: 2
-    head_dims: !!python/tuple []
+    fc_dims: [ ]
+    lstm_dim: 2
+    head_dims: [ ]
     threshold: .9             # threshold above which recurrence is stopped
-    max_rec: 2               # maximum number of recurrences
+    max_rec: 1               # maximum number of recurrences
     loss_type: final          # final, every, (first)
     skip_connections: false   # if skip connection is used in recurrent layer
 
 loader:
-  module: lab.data.dataloaders_crossval
-  name: DataLoaderSyntheticHardCV
+  module: lab.data.dataloaders
+  name: DataLoaderSyntheticHard
   args:
     batch_size: 100
-    n_splits: 10
-    n_features: 2
-    seed: 1
+    valid_fraction: .1
+    n_samples: 1.0e5
+    #n_clusters_per_class: 5
 
 trainer:
   module: lab.trainer
-  name: CrossValidationTrainer
+  name: Trainer
   args:
     n_epochs: 1000
-    early_stop_criterion: 150 # if no improvement over this many epochs, stop training
     bm_metric: loss
     log_dir: results
     save_dir: results
@@ -39,6 +37,7 @@ trainer:
       #every_step: .0    # loss is computed for every step's output
       # remaining time:   loss is computed for the final step's output
 
-    max_rec_scheduler: # step wise increase from min to max
-      step_length: 5 # how many epochs is one step
+    #max_rec_scheduler: # linear increase from min to max
+      #min: 1
+      #max: 2
 

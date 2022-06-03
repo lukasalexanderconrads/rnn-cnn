@@ -22,6 +22,7 @@ def load_model(result_dir, model_name, model_version='best_model.pth', device='c
     model = get_model(config, in_dim=loader.data_dim, out_dim=loader.n_classes)
 
     model.load_state_dict(state_dict)
+    torch.set_grad_enabled(False)
 
     return model, loader
 
@@ -31,19 +32,21 @@ def evaluate(model, loader):
     steps = 0
     counter = 0
     for minibatch in loader.test:
+        batch_size = minibatch['target'].size(0)
         stats = model.test_step(minibatch)
-        acc += float(stats['accuracy'])
-        ce += float(stats['cross_entropy'])
-        steps += float(stats.get('average steps', 0))
-        counter += 1
+        acc += float(stats['accuracy']) * batch_size
+        ce += float(stats['cross_entropy']) * batch_size
+        steps += float(stats.get('average steps', 0)) * batch_size
+        counter += batch_size
+
     acc = acc / counter * 100
     ce /= counter
     steps /= counter
     return acc, ce, steps
 
-
 def load_and_evaluate_dir(result_dir, model_dir):
     _, timestamps, _ = next(os.walk(os.path.join(result_dir, model_dir)))
+    timestamps = sorted(timestamps)
     loader = None
 
     acc_list = []

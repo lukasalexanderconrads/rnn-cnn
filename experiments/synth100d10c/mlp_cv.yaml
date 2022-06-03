@@ -7,7 +7,7 @@ model:
   module: lab.models.simple
   name: MLP
   args:                   # layers: (in_dim, layer_dims[0]), ..., (layer_dims[-1], out_dim)
-    layer_dims: [!!python/tuple [50, 20, 20, 20, 10]]
+    layer_dims: [!!python/tuple [10, 10]]
 
 loader:
   module: lab.data.dataloaders_crossval

@@ -254,11 +254,8 @@ class LSTM(RNN):
         head_dims = kwargs.get('head_dims', [])
 
 
-        fc_dims = [in_dim] + fc_dims
-        if len(fc_dims) == 0:
-            self.fc_layers = lambda x: x
-        else:
-            self.fc_layers = create_mlp(fc_dims, output_activation=True).to(self.device)
+        fc_dims = [in_dim] + fc_dims + [self.lstm_dim]
+        self.fc_layers = create_mlp(fc_dims, output_activation=True).to(self.device)
 
         self.lstm_layer = nn.LSTM(input_size=fc_dims[-1],
                                   hidden_size=self.lstm_dim).to(self.device)
@@ -271,6 +268,7 @@ class LSTM(RNN):
         self.threshold = kwargs.get('threshold', .9)
         self.skip_connections = kwargs.get('skip_connections', False)
         self.loss_type = kwargs.get('loss_type', 'final')  # first, every, final
+        self.fixed_input = kwargs.get('fixed_input', True)
 
     def forward(self, input):
         """
@@ -281,7 +279,7 @@ class LSTM(RNN):
             input = input.unsqueeze(0)
         batch_size = input.size(0)
 
-        a = self.fc_layers(input)   # [batch_size, fc_out_dim]
+        l = a = self.fc_layers(input)   # [batch_size, fc_out_dim]
         h = torch.zeros((1, batch_size, self.lstm_dim), device=self.device)
         c = torch.zeros((1, batch_size, self.lstm_dim), device=self.device)
         # store the step index where a logit was above the threshold for the first time
@@ -289,7 +287,9 @@ class LSTM(RNN):
         logits_list = []
         for step in range(self.max_rec):
             # recurrent layer
-            _, (h, c) = self.lstm_layer(a.unsqueeze(0), (h, c))
+            if self.fixed_input:
+                l = a
+            _, (h, c) = self.lstm_layer(l.unsqueeze(0), (h, c))
             # get class probs
             logits = self.get_logits(h.squeeze())
             logits_list.append(logits)
