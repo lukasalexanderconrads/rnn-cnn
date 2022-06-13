@@ -1,9 +1,10 @@
+import numpy as np
 import torch
 from torch.utils.data import Dataset
 from sklearn.datasets import load_iris, fetch_covtype
 from sklearn.datasets import make_classification
 from matplotlib import pyplot as plt
-from lab.data.utils import make_spiral
+from lab.data.utils import make_spiral, make_blobs
 import torchvision
 
 
@@ -75,14 +76,19 @@ class SyntheticDatasetHard(ClassificationDataset):
         self.n_clusters_per_class = kwargs.get('n_clusters_per_class', 2)
         self.n_features = kwargs.get('n_features', 2)
         self.seed = kwargs.get('seed', 1)
+        self.n_datasets = kwargs.get('n_datasets', 1)
+        self.n_samples = kwargs.get('n_samples', 1e5)
         super(SyntheticDatasetHard, self).__init__(device)
 
     def _get_data(self):
-        input, target = make_classification(n_samples=int(1e5), n_features=self.n_features,
+
+        input, target = make_classification(n_samples=int(self.n_samples), n_features=self.n_features,
                                             n_informative=self.n_features, n_redundant=0,
                                             n_classes=self.n_classes,
                                             n_clusters_per_class=self.n_clusters_per_class,
                                             random_state=self.seed)
+
+
         input = torch.tensor(input, dtype=torch.float32)
         target = torch.tensor(target, dtype=torch.int64)
         return input, target
@@ -98,16 +104,27 @@ class SpiralDataset(ClassificationDataset):
         target = torch.tensor(target, dtype=torch.int64)
         return input, target
 
+class BlobDataset(ClassificationDataset):
+    def __init__(self, device, **kwargs):
+        self.seed = kwargs.get('seed', 1)
+        super(BlobDataset, self).__init__(device)
+
+    def _get_data(self):
+        input, target = make_blobs(seed=self.seed)
+        input = torch.tensor(input, dtype=torch.float32)
+        target = torch.tensor(target, dtype=torch.int64)
+        return input, target
+
 class MNISTDataset(ClassificationDataset):
     def __init__(self, device, **kwargs):
         self.seed = kwargs.get('seed', 1)
+        self.path = kwargs.get('path', './data')
         super(MNISTDataset, self).__init__(device)
 
     def _get_data(self):
-        dataset = torchvision.datasets.MNIST('/files/', train=True, download=True,
-                                             transform=torchvision.transforms.Compose([torchvision.transforms.ToTensor(),
-                                                                                       torchvision.transforms.Normalize((0.1307,), (0.3081,))]))
-        input = dataset.data
+        dataset = torchvision.datasets.MNIST(self.path, train=True, download=True,
+                                             transform=torchvision.transforms.Compose([torchvision.transforms.ToTensor()]))
+        input = dataset.data.flatten(start_dim=1)
         target = dataset.targets
         input = torch.tensor(input, dtype=torch.float32)
         target = torch.tensor(target, dtype=torch.int64)

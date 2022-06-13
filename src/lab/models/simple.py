@@ -3,6 +3,7 @@ from torch import nn
 
 from lab.models.base import Model
 from lab.utils import create_mlp
+from lab.blocks import MyRNN, MyRNN2
 
 class MLP(Model):
     def __init__(self, in_dim, out_dim: int, **kwargs):
@@ -279,7 +280,7 @@ class LSTM(RNN):
             input = input.unsqueeze(0)
         batch_size = input.size(0)
 
-        l = a = self.fc_layers(input)   # [batch_size, fc_out_dim]
+        l = a = self.fc_layers(input).unsqueeze(0)   # [1, batch_size, fc_out_dim]
         h = torch.zeros((1, batch_size, self.lstm_dim), device=self.device)
         c = torch.zeros((1, batch_size, self.lstm_dim), device=self.device)
         # store the step index where a logit was above the threshold for the first time
@@ -288,10 +289,76 @@ class LSTM(RNN):
         for step in range(self.max_rec):
             # recurrent layer
             if self.fixed_input:
-                l = a
-            _, (h, c) = self.lstm_layer(l.unsqueeze(0), (h, c))
+                l = a.clone()
+            l, (h, c) = self.lstm_layer(l, (h, c))
             # get class probs
-            logits = self.get_logits(h.squeeze())
+            logits = self.get_logits(l.squeeze())
+            logits_list.append(logits)
+
+            # update final_steps
+            probs = nn.functional.softmax(logits, dim=1)  # [batch_size, n_classes]
+            done_mask = torch.logical_and(torch.max(probs, dim=1).values > self.threshold,
+                                          final_steps == self.max_rec - 1)
+            final_steps[done_mask] = step  # [batch_size]
+
+            # break if all examples have finished
+            if torch.all(final_steps != self.max_rec - 1):
+                break
+
+        logits_stacked = torch.stack(logits_list)  # [max_rec, batch_size, n_classes]
+
+        return logits_stacked, final_steps
+
+class GRU(RNN):
+    def __init__(self, in_dim: int, out_dim: int, **kwargs):
+        """
+        MLP with feed forward layers and recurrent layers
+        :param kwargs:
+        """
+        super(MLP, self).__init__(**kwargs)
+
+        # define network architecture
+        fc_dims = kwargs.get('fc_dims', [])
+        self.gru_dim = kwargs.get('gru_dim')
+        head_dims = kwargs.get('head_dims', [])
+
+        fc_dims = [in_dim] + fc_dims + [self.gru_dim]
+        self.fc_layers = create_mlp(fc_dims, output_activation=True).to(self.device)
+
+        self.gru_layer = nn.GRU(input_size=fc_dims[-1],
+                                  hidden_size=self.gru_dim).to(self.device)
+
+        head_dims = [self.gru_dim] + head_dims + [out_dim]
+        self.get_logits = create_mlp(head_dims).to(self.device)
+
+        # get recurrency parameters
+        self.max_rec_lim = self.max_rec = kwargs.get('max_rec', 10)
+        self.threshold = kwargs.get('threshold', .9)
+        self.skip_connections = kwargs.get('skip_connections', False)
+        self.loss_type = kwargs.get('loss_type', 'final')  # first, every, final
+        self.fixed_input = kwargs.get('fixed_input', True)
+
+    def forward(self, input):
+        """
+        :param input: tensor [batch_size, input_dim]
+        :return: output: tensor [batch_size, output_dim]
+        """
+        if input.dim() == 1:
+            input = input.unsqueeze(0)
+        batch_size = input.size(0)
+
+        l = a = self.fc_layers(input).unsqueeze(0)  # [1, batch_size, fc_out_dim]
+        h = torch.zeros((1, batch_size, self.gru_dim), device=self.device)
+        # store the step index where a logit was above the threshold for the first time
+        final_steps = torch.full((input.size(0),), self.max_rec - 1).to(self.device)
+        logits_list = []
+        for step in range(self.max_rec):
+            # recurrent layer
+            if self.fixed_input:
+                l = a.clone()
+            l, h = self.gru_layer(l, h)
+            # get class probs
+            logits = self.get_logits(l.squeeze())
             logits_list.append(logits)
 
             # update final_steps
@@ -311,7 +378,79 @@ class LSTM(RNN):
     def print_layers(self):
         print('model layers:')
         print(self.fc_layers)
-        print(self.lstm_layer)
+        print(self.gru_layer)
+        print(self.get_logits)
+
+class SimpleGRU(RNN):
+    def __init__(self, in_dim: int, out_dim: int, **kwargs):
+        """
+        MLP with feed forward layers and recurrent layers
+        :param kwargs:
+        """
+        super(MLP, self).__init__(**kwargs)
+
+        # define network architecture
+        fc_dims = kwargs.get('fc_dims', [])
+        self.gru_dim = kwargs.get('gru_dim')
+        head_dims = kwargs.get('head_dims', [])
+
+        fc_dims = [in_dim] + fc_dims + [self.gru_dim]
+        self.fc_layers = create_mlp(fc_dims, output_activation=True).to(self.device)
+
+        self.gru_layer = nn.RNN(input_size=fc_dims[-1],
+                                  hidden_size=self.gru_dim, nonlinearity='relu').to(self.device)
+
+        head_dims = [self.gru_dim] + head_dims + [out_dim]
+        self.get_logits = create_mlp(head_dims).to(self.device)
+
+        # get recurrency parameters
+        self.max_rec_lim = self.max_rec = kwargs.get('max_rec', 10)
+        self.threshold = kwargs.get('threshold', .9)
+        self.skip_connections = kwargs.get('skip_connections', False)
+        self.loss_type = kwargs.get('loss_type', 'final')  # first, every, final
+        self.fixed_input = kwargs.get('fixed_input', True)
+
+    def forward(self, input):
+        """
+        :param input: tensor [batch_size, input_dim]
+        :return: output: tensor [batch_size, output_dim]
+        """
+        if input.dim() == 1:
+            input = input.unsqueeze(0)
+        batch_size = input.size(0)
+
+        l = a = self.fc_layers(input).unsqueeze(0)  # [1, batch_size, fc_out_dim]
+        h = torch.zeros((1, batch_size, self.gru_dim), device=self.device)
+        # store the step index where a logit was above the threshold for the first time
+        final_steps = torch.full((input.size(0),), self.max_rec - 1).to(self.device)
+        logits_list = []
+        for step in range(self.max_rec):
+            # recurrent layer
+            if self.fixed_input:
+                l = a.clone()
+            l, h = self.gru_layer(l, h)
+            # get class probs
+            logits = self.get_logits(l.squeeze())
+            logits_list.append(logits)
+
+            # update final_steps
+            probs = nn.functional.softmax(logits, dim=1)  # [batch_size, n_classes]
+            done_mask = torch.logical_and(torch.max(probs, dim=1).values > self.threshold,
+                                          final_steps == self.max_rec - 1)
+            final_steps[done_mask] = step  # [batch_size]
+
+            # break if all examples have finished
+            if torch.all(final_steps != self.max_rec - 1):
+                break
+
+        logits_stacked = torch.stack(logits_list)  # [max_rec, batch_size, n_classes]
+
+        return logits_stacked, final_steps
+
+    def print_layers(self):
+        print('model layers:')
+        print(self.fc_layers)
+        print(self.gru_layer)
         print(self.get_logits)
 
 class CustomRNN(RNN):
@@ -366,6 +505,78 @@ class CustomRNN(RNN):
             h = self.rnn_layer(rnn_inp)
             # get class probs
             logits = self.get_logits(h)
+            logits_list.append(logits)
+
+            # update final_steps
+            probs = nn.functional.softmax(logits, dim=1)  # [batch_size, n_classes]
+            done_mask = torch.logical_and(torch.max(probs, dim=1).values > self.threshold,
+                                          final_steps == self.max_rec - 1)
+            final_steps[done_mask] = step  # [batch_size]
+
+            # break if all examples have finished
+            if torch.all(final_steps != self.max_rec - 1):
+                break
+
+        logits_stacked = torch.stack(logits_list)  # [max_rec, batch_size, n_classes]
+
+        return logits_stacked, final_steps
+
+class MyCustomRNN(RNN):
+    def __init__(self, in_dim: int, out_dim: int, **kwargs):
+        """
+        MLP with feed forward layers and recurrent layers
+        :param kwargs:
+        """
+        super(MLP, self).__init__(**kwargs)
+
+        self.max_rec_lim = self.max_rec = kwargs.get('max_rec', 10)
+
+
+        # define network architecture
+        fc_dims = kwargs.get('fc_dims', [])
+        self.rnn_dim = kwargs.get('rnn_dim')
+        self.hidden_dim = kwargs.get('hidden_dim')
+        head_dims = kwargs.get('head_dims', [])
+        self.rnn_type = kwargs.get('rnn_type', 'myrnn')
+
+        fc_dims = [in_dim] + fc_dims + [self.rnn_dim]
+
+        self.fc_layers = create_mlp(fc_dims, output_activation=True).to(self.device)
+        if self.rnn_type == 'myrnn':
+            self.rnn_layer = MyRNN(self.rnn_dim, self.hidden_dim, device=self.device)
+        elif self.rnn_type == 'myrnn2':
+            self.rnn_layer = MyRNN2(self.rnn_dim, device=self.device)
+
+        head_dims = [self.rnn_dim] + head_dims + [out_dim]
+        self.get_logits = create_mlp(head_dims).to(self.device)
+
+        # get recurrency parameters
+        self.max_rec_lim = self.max_rec = kwargs.get('max_rec', 10)
+        self.threshold = kwargs.get('threshold', .9)
+        self.skip_connections = kwargs.get('skip_connections', False)
+        self.loss_type = kwargs.get('loss_type', 'final')  # first, every, final
+        self.fixed_input = kwargs.get('fixed_input', True)
+
+    def forward(self, input):
+        """
+        :param input: tensor [batch_size, input_dim]
+        :return: output: tensor [batch_size, output_dim]
+        """
+        if input.dim() == 1:
+            input = input.unsqueeze(0)
+
+        l = a = self.fc_layers(input)  # [1, batch_size, fc_out_dim]
+        h = None
+        # store the step index where a logit was above the threshold for the first time
+        final_steps = torch.full((input.size(0),), self.max_rec - 1).to(self.device)
+        logits_list = []
+        for step in range(self.max_rec):
+            # recurrent layer
+            if self.fixed_input:
+                l = a.clone()
+            l, h = self.rnn_layer(l, h)
+            # get class probs
+            logits = self.get_logits(l)
             logits_list.append(logits)
 
             # update final_steps
