@@ -45,3 +45,51 @@ class MyRNN2(nn.Module):
         h = self.hidden_gate(gate_input)
 
         return y, h
+
+class MyRNN3(nn.Module):
+    def __init__(self, dim, device):
+        super(MyRNN3, self).__init__()
+        self.device = device
+        self.out_gate = nn.Sequential(nn.Linear(dim, dim),
+                                      nn.LeakyReLU()).to(self.device)
+        self.hidden_gate = nn.Sequential(nn.Linear(dim, dim),
+                                         nn.LeakyReLU()).to(self.device)
+
+        self.dim = dim
+
+    def forward(self, x, h=None):
+        if h is None:
+            h = torch.ones((x.size(0), self.dim), device=self.device)
+
+        gate_input = x + h
+
+        y = self.out_gate(gate_input)
+        h = self.hidden_gate(gate_input)
+
+        return y, h
+
+class ElmanRNN(nn.Module):
+    def __init__(self, in_dim, hidden_dim, device, simplified=False):
+        super(ElmanRNN, self).__init__()
+        self.device = device
+        self.hidden_gate = nn.Sequential(nn.Linear(in_dim + hidden_dim, hidden_dim),
+                                      nn.LeakyReLU()).to(self.device)
+        if not simplified:
+            self.out_gate = nn.Sequential(nn.Linear(hidden_dim, in_dim),
+                                             nn.LeakyReLU()).to(self.device)
+
+        self.hidden_dim = hidden_dim
+        self.simplified = simplified
+
+    def forward(self, x, h=None):
+        if h is None:
+            h = torch.ones((x.size(0), self.hidden_dim), device=self.device)
+
+        gate_input = torch.cat((x, h), dim=1)
+
+        h = self.hidden_gate(gate_input)
+        if self.simplified:
+            return h, h
+        y = self.out_gate(h)
+
+        return y, h

@@ -3,7 +3,7 @@ from torch import nn
 
 from lab.models.base import Model
 from lab.utils import create_mlp
-from lab.blocks import MyRNN, MyRNN2
+from lab.blocks import MyRNN, MyRNN2, MyRNN3, ElmanRNN
 
 class MLP(Model):
     def __init__(self, in_dim, out_dim: int, **kwargs):
@@ -136,6 +136,7 @@ class RNN(MLP):
             if torch.all(final_steps != self.max_rec-1):
                 break
 
+
         logits_stacked = torch.stack(logits_list)           # [max_rec, batch_size, n_classes]
 
         return logits_stacked, final_steps
@@ -182,6 +183,7 @@ class RNN(MLP):
             logits = self.get_final_logits(logits_stacked, final_steps)
 
         loss = nn.functional.cross_entropy(logits, target)
+
         return loss
 
 
@@ -546,7 +548,12 @@ class MyCustomRNN(RNN):
             self.rnn_layer = MyRNN(self.rnn_dim, self.hidden_dim, device=self.device)
         elif self.rnn_type == 'myrnn2':
             self.rnn_layer = MyRNN2(self.rnn_dim, device=self.device)
-
+        elif self.rnn_type == 'myrnn3':
+            self.rnn_layer = MyRNN3(self.rnn_dim, device=self.device)
+        elif self.rnn_type == 'elman':
+            self.rnn_layer = ElmanRNN(self.rnn_dim, self.hidden_dim, device=self.device)
+        elif self.rnn_type == 'simple_elman':
+            self.rnn_layer = ElmanRNN(self.rnn_dim, self.hidden_dim, device=self.device, simplified=True)
         head_dims = [self.rnn_dim] + head_dims + [out_dim]
         self.get_logits = create_mlp(head_dims).to(self.device)
 
