@@ -1,3 +1,4 @@
+import math
 import os
 import shutil
 from datetime import datetime
@@ -8,6 +9,7 @@ import yaml
 
 from torch.utils.tensorboard import SummaryWriter
 from lab.utils import MetricAccumulator, reset_parameters, get_data_loader, get_model, create_instance
+from lab.models.nlp import RTENLPMLP
 
 class Trainer:
 
@@ -23,9 +25,16 @@ class Trainer:
         """
         name = config['name']
         self.data_loader = get_data_loader(config)
+        # text data loaders need to pass vocab size to the model
+        vocab_size = self.data_loader.vocab_size if hasattr(self.data_loader, 'vocab_size') else None
+
         self.model = get_model(config,
                           in_dim=self.data_loader.data_dim,
-                          out_dim=self.data_loader.n_classes)
+                          out_dim=self.data_loader.n_classes, vocab_size=vocab_size)
+
+        if isinstance(self.model, RTENLPMLP):
+            self.model.vocab = self.data_loader.vocab
+
         self.optimizer = create_instance(config['optimizer']['module'], config['optimizer']['name'],
                                          config['optimizer']['args'], self.model.parameters())
 
@@ -34,6 +43,7 @@ class Trainer:
         # schedulers
         self.loss_scheduler = kwargs.get('loss_scheduler', None)
         self.max_rec_scheduler = kwargs.get('max_rec_scheduler', None)
+        self.tau_scheduler = kwargs.get('tau_scheduler', None)
 
         # logging
         timestamp = self.get_timestamp()
@@ -53,16 +63,22 @@ class Trainer:
 
         self.early_stop_criterion = kwargs.get('early_stop_criterion', 50)
 
+        # self.use_estimator_after_epoch = kwargs.get('use_estimator_after_epoch', 0)
+
     def train(self):
         for epoch in tqdm(range(self.n_epochs), desc='epochs'):
             if self.loss_scheduler is not None:
                 self.update_loss_type(epoch)
             if self.max_rec_scheduler is not None:
                 self.update_max_rec(epoch)
+            if self.tau_scheduler is not None:
+                self.update_tau(epoch)
             self.model.train()
+            torch.set_grad_enabled(True)
             self.train_epoch(epoch)
 
             self.model.eval()
+            torch.set_grad_enabled(False)
             self.test_epoch(epoch)
             if self.check_early_stopping():
                 break
@@ -75,6 +91,8 @@ class Trainer:
         for minibatch in tqdm(self.data_loader.train, desc='train set', leave=False):
             metrics = self.model.train_step(minibatch, self.optimizer)
             self.metric_avg.update(metrics)
+            # if hasattr(self.model, 'fit_estimator') and epoch > self.use_estimator_after_epoch:
+            #     self.model.fit_estimator()
         metrics = self.metric_avg.get_average()
         self.writer.add_scalar('train/loss', metrics['loss'], epoch)
         self.log(metrics, epoch)
@@ -103,6 +121,13 @@ class Trainer:
             self.model.max_rec = 1
         elif epoch % step_length == 0:
             self.model.max_rec = min(self.model.max_rec_lim, self.model.max_rec + 1)
+
+    def update_tau(self, epoch):
+        epoch_frac = epoch / self.n_epochs
+        tau_max = self.tau_scheduler['tau_max']
+        tau_min = self.tau_scheduler['tau_min']
+        self.model.tau = max(tau_min, tau_max * math.exp(-epoch_frac * 10))
+        self.writer.add_scalar(f'train/tau', self.model.tau, epoch)
 
 
     def log(self, metrics, epoch, split='train'):

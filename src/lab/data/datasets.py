@@ -1,15 +1,16 @@
 import numpy as np
 import torch
 from torch.utils.data import Dataset
-from sklearn.datasets import load_iris, fetch_covtype
+from sklearn.datasets import load_iris, fetch_covtype, fetch_olivetti_faces
 from sklearn.datasets import make_classification
 from matplotlib import pyplot as plt
-from lab.data.utils import make_spiral, make_blobs
+from lab.data.utils import *
 import torchvision
 
 
+
 class ClassificationDataset(Dataset):
-    def __init__(self, device):
+    def __init__(self, device=torch.device('cpu')):
         super(ClassificationDataset, self).__init__()
 
         input, target = self._get_data()
@@ -45,7 +46,7 @@ class IrisDataset(ClassificationDataset):
 
 
 class CovertypeDataset(ClassificationDataset):
-    def __init__(self, device):
+    def __init__(self, device=torch.device('cpu')):
         super(CovertypeDataset, self).__init__(device)
 
     @staticmethod
@@ -55,37 +56,27 @@ class CovertypeDataset(ClassificationDataset):
         target = torch.tensor(target, dtype=torch.int64)
         return input, target
 
-class SyntheticDatasetGaussian(ClassificationDataset):
-    def __init__(self, device, n_samples=10e5):
-        self.n_samples = n_samples
-        super(SyntheticDatasetGaussian, self).__init__(device)
-
-    def _get_data(self):
-        class1 = torch.randn(int(self.n_samples // 2 - self.n_samples // 10), 2) - 2
-        class1_cluster2 = torch.randn(int(self.n_samples // 10), 2) / 10 + 5
-        class2 = torch.randn(int(self.n_samples // 2), 2) + 2
-
-        input = torch.cat([class1, class1_cluster2, class2], dim=0)
-        target = torch.cat([torch.zeros(int(self.n_samples // 2)), torch.ones(int(self.n_samples // 2))], dim=0)
-        target = target.type(torch.int64)
-        return input, target
-
-class SyntheticDatasetHard(ClassificationDataset):
+class SyntheticDataset(ClassificationDataset):
     def __init__(self, device, **kwargs):
         self.n_classes = kwargs.get('n_classes', 2)
         self.n_clusters_per_class = kwargs.get('n_clusters_per_class', 2)
         self.n_features = kwargs.get('n_features', 2)
+        self.n_informative = kwargs.get('n_informative', self.n_features)
         self.seed = kwargs.get('seed', 1)
         self.n_datasets = kwargs.get('n_datasets', 1)
         self.n_samples = kwargs.get('n_samples', 1e5)
-        super(SyntheticDatasetHard, self).__init__(device)
+        self.flip_y = kwargs.get('flip_y', 0.01)
+        self.class_sep = kwargs.get('class_sep', 1)
+        super(SyntheticDataset, self).__init__(device)
 
     def _get_data(self):
 
         input, target = make_classification(n_samples=int(self.n_samples), n_features=self.n_features,
-                                            n_informative=self.n_features, n_redundant=0,
+                                            n_informative=self.n_informative, n_redundant=0,
                                             n_classes=self.n_classes,
                                             n_clusters_per_class=self.n_clusters_per_class,
+                                            class_sep=self.class_sep,
+                                            flip_y=self.flip_y,
                                             random_state=self.seed)
 
 
@@ -107,10 +98,23 @@ class SpiralDataset(ClassificationDataset):
 class BlobDataset(ClassificationDataset):
     def __init__(self, device, **kwargs):
         self.seed = kwargs.get('seed', 1)
+        self.modified = kwargs.get('modified', False)
         super(BlobDataset, self).__init__(device)
 
     def _get_data(self):
-        input, target = make_blobs(seed=self.seed)
+        input, target = make_blobs(seed=self.seed, modified=self.modified)
+        input = torch.tensor(input, dtype=torch.float32)
+        target = torch.tensor(target, dtype=torch.int64)
+        return input, target
+
+class Blob3CDataset(ClassificationDataset):
+    def __init__(self, device, **kwargs):
+        self.seed = kwargs.get('seed', 1)
+        self.modified = kwargs.get('modified', False)
+        super(Blob3CDataset, self).__init__(device)
+
+    def _get_data(self):
+        input, target = make_blobs3c(seed=self.seed, modified=self.modified)
         input = torch.tensor(input, dtype=torch.float32)
         target = torch.tensor(target, dtype=torch.int64)
         return input, target
@@ -131,9 +135,10 @@ class MNISTDataset(ClassificationDataset):
         return input, target
 
 
+
 if __name__ == '__main__':
 
-    ds = SpiralDataset(torch.device('cpu'), n_samples=10e2)
+    ds = BlobDataset(torch.device('cpu'), modified=True)
 
     samples = ds[range(len(ds))]
 

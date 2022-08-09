@@ -1,35 +1,41 @@
-name: synth10d/mlp/
+name: qnli/mlp/
 device: cuda:0
-num_runs: 3
+num_runs: 2
 seed: 1
 
 model:
-  module: lab.models.simple
-  name: MLP
+  module: lab.models.nlp
+  name: RTENLPMLP
   args:                   # layers: (in_dim, layer_dims[0]), ..., (layer_dims[-1], out_dim)
-    layer_dims: [!!python/tuple [2, 2], !!python/tuple [2, 2, 2]]
+    layer_dims: [!!python/tuple [256, 256]]
+    dropout: .5
+
+    encoder:
+      module: lab.blocks
+      name: EncoderLSTM
+      args:
+        emb_dim: 512
+        hidden_dim: 128
+        num_layers: 1
 
 loader:
   module: lab.data.dataloaders
-  name: DataLoaderSyntheticHard
+  name: DataLoaderQNLI
   args:
-    batch_size: 100
-    n_classes: 2
-    n_features: 10
-    n_clusters_per_class: 5
-    seed: 1
+    batch_size: 256
+    path: data/QNLI
 
 optimizer:
   module: torch.optim
   name: Adam
   args:
-    lr: .01
+    lr: .001
 
 trainer:
   module: lab.trainer
   name: Trainer
   args:
-    n_epochs: 1000
+    n_epochs: 300
     bm_metric: cross_entropy
     early_stop_criterion: 100 # if no improvement over this many epochs, stop training
     log_dir: results

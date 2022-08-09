@@ -1,25 +1,27 @@
-name: synth2d/rnn/
+name: covtype/rnn/
 device: cuda:0
-num_runs: 10
+num_runs: 3
 seed: 1
 
 model:
   module: lab.models.recurrence_estim
   name: RNN
   args:
-    rnn_dim: 2
-    max_rec: 2               # maximum number of recurrences
     rnn_type: [linear, myrnn1]
+    rnn_dim: 16
+    max_rec: [2, 3]             # maximum number of recurrences
 
     stopping_criterion: [threshold]
-    threshold: [.9]
+
+    threshold: [0.5, 0.6, 0.7]
 
 
 loader:
   module: lab.data.dataloaders
-  name: DataLoaderSynthetic
+  name: DataLoaderCovtype
   args:
     batch_size: 500
+    seed: 1
 
 optimizer:
   module: torch.optim
@@ -31,12 +33,12 @@ trainer:
   module: lab.trainer
   name: Trainer
   args:
-    n_epochs: 1000
+    n_epochs: 2000
     bm_metric: cross_entropy
     early_stop_criterion: 1000 # if no improvement over this many epochs, stop training
     log_dir: results
     save_dir: results
 
     max_rec_scheduler: # linear increase from min to max
-      step_length: [300, 5]
+      step_length: 5
 

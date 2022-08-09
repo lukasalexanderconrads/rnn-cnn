@@ -1,19 +1,20 @@
-name: synth2d/mlp/
+name: spiral/mlp/
 device: cuda:0
-num_runs: 10
+num_runs: 5
 seed: 1
 
 model:
   module: lab.models.simple
   name: MLP
   args:
-    layer_dims: [!!python/tuple [2, 2, 2]]
+    layer_dims: [!!python/tuple [5, 5], !!python/tuple [5, 5, 5], !!python/tuple [5, 5, 5, 5],]
 
 loader:
   module: lab.data.dataloaders
-  name: DataLoaderSynthetic
+  name: DataLoaderSpiral
   args:
     batch_size: 500
+
 
 optimizer:
   module: torch.optim
@@ -27,6 +28,6 @@ trainer:
   args:
     n_epochs: 1000
     bm_metric: cross_entropy
-    early_stop_criterion: 200 # if no improvement over this many epochs, stop training
+    early_stop_criterion: 300 # if no improvement over this many epochs, stop training
     log_dir: results
     save_dir: results

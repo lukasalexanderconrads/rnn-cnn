@@ -1,0 +1,49 @@
+name: blob/rnn/
+device: cuda:0
+num_runs: 10
+seed: 1
+
+model:
+  module: lab.models.simple
+  name: RNN
+  args:
+    fc_dims: !!python/tuple []
+    rnn_dim: 2
+    head_dims: !!python/tuple []
+    threshold: .9             # threshold above which recurrence is stopped
+    max_rec: 2               # maximum number of recurrences
+    loss_type: final          # final, every, (first)
+    skip_connections: false   # if skip connection is used in recurrent layer
+
+loader:
+  module: lab.data.dataloaders
+  name: DataLoaderBlob
+  args:
+    batch_size: 100
+    seed: 1
+
+optimizer:
+  module: torch.optim
+  name: Adam
+  args:
+    lr: .001
+
+trainer:
+  module: lab.trainer
+  name: Trainer
+  args:
+    n_epochs: 1000
+    bm_metric: loss
+    early_stop_criterion: 200 # if no improvement over this many epochs, stop training
+    log_dir: results
+    save_dir: results
+
+    #loss_scheduler: None # fraction of total training that a given loss type is active
+      #first_step: .0    # loss is computed for the first step's output
+      #every_step: .0    # loss is computed for every step's output
+      # remaining time:   loss is computed for the final step's output
+
+    #max_rec_scheduler: # linear increase from min to max
+      #min: 1
+      #max: 2
+

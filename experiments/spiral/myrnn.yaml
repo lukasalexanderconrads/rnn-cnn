@@ -1,0 +1,51 @@
+name: spiral/myrnn/
+device: cuda:0
+num_runs: 2
+seed: 1
+
+model:
+  module: lab.models.simple
+  name: MyCustomRNN
+  args:
+    fc_dims: !!python/tuple []
+    rnn_dim: 5
+    hidden_dim: [5]
+    head_dims: !!python/tuple []
+    threshold: .9             # threshold above which recurrence is stopped
+    max_rec: [3]               # maximum number of recurrences
+    loss_type: final          # final, every, (first)
+    skip_connections: false   # if skip connection is used in recurrent layer
+    fixed_input: [True]
+    rnn_type: [simple_elman]
+
+loader:
+  module: lab.data.dataloaders
+  name: DataLoaderSpiral
+  args:
+    batch_size: 100
+    seed: 1
+
+optimizer:
+  module: torch.optim
+  name: Adam
+  args:
+    lr: .001
+
+trainer:
+  module: lab.trainer
+  name: Trainer
+  args:
+    n_epochs: 2000
+    bm_metric: loss
+    early_stop_criterion: 300 # if no improvement over this many epochs, stop training
+    log_dir: results
+    save_dir: results
+
+    #loss_scheduler: None # fraction of total training that a given loss type is active
+      #first_step: .0    # loss is computed for the first step's output
+      #every_step: .0    # loss is computed for every step's output
+      # remaining time:   loss is computed for the final step's output
+
+    #max_rec_scheduler: # step wise increase from min to max
+      #step_length: 50  # how many epochs is one step
+

@@ -25,8 +25,6 @@ class MLP(Model):
         :param input: tensor [batch_size, input_dim]
         :return: output: tensor [batch_size, output_dim]
         """
-        if input.dim() == 1:
-            input = input.unsqueeze(0)
         return self.get_logits(input)
 
     def train_step(self, minibatch, optimizer: torch.optim.Optimizer):
@@ -37,12 +35,12 @@ class MLP(Model):
 
         logits = self.forward(input)
 
-        loss = self.loss(logits, target)
+        loss_stats = self.loss(logits, target)
 
-        loss.backward()
+        loss_stats['loss'].backward()
         optimizer.step()
 
-        return {'loss': loss}
+        return loss_stats
 
     def test_step(self, minibatch):
         input = minibatch['input']
@@ -50,18 +48,22 @@ class MLP(Model):
 
         logits = self.forward(input)
 
+        loss_stats = self.loss(logits, target)
         metrics = self.metrics(logits, target)
 
-        return metrics
+        return metrics | loss_stats
+
+    def evaluate(self, minibatch, **kwargs):
+        return self.test_step(minibatch)
 
     @staticmethod
     def loss(logits, target):
-        return nn.functional.cross_entropy(logits, target)
+        loss = nn.functional.cross_entropy(logits, target)
+        return {'loss': loss, 'cross_entropy': loss}
 
     def metrics(self, logits, target):
         accuracy = self.get_accuracy(logits, target)
-        ce_loss = self.loss(logits, target)
-        return {'cross_entropy': ce_loss, 'accuracy': accuracy}
+        return {'accuracy': accuracy}
 
     @staticmethod
     def get_accuracy(logits, target):
@@ -599,18 +601,3 @@ class MyCustomRNN(RNN):
         logits_stacked = torch.stack(logits_list)  # [max_rec, batch_size, n_classes]
 
         return logits_stacked, final_steps
-
-if __name__ == '__main__':
-    mlp = MLP([10, 20, 20, 20, 5], device=torch.device('cpu'))
-    print(mlp.get_logits)
-
-    x = torch.randn((16, 10))
-    y = mlp.forward(x)
-    print(y.size())
-
-    rnn = RNN([10, 20], 20, 5, device=torch.device('cpu'))
-    print(rnn.get_logits)
-
-    x = torch.randn((16, 10))
-    y = rnn.forward(x)
-    print(y.size())

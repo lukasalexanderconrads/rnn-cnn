@@ -1,0 +1,50 @@
+name: blob-hard/rnn/
+device: cuda:0
+num_runs: 20
+seed: 1
+
+model:
+  module: lab.models.recurrence_estim
+  name: RNN
+  args:
+    rnn_dim: 2
+    max_rec: 2               # maximum number of recurrences
+    rnn_type: [linear]
+
+    stopping_criterion: [learnable]
+
+    learnable_target: [first_correct, none]
+
+    rec_fn_type: [rbf, mlp]
+    rbf_dim: 2
+    rec_fn_layers: !!python/tuple [2]
+    reg_target: !!python/tuple [.8, .2]
+    reg_weight: 1
+    tau: .1
+
+
+loader:
+  module: lab.data.dataloaders
+  name: DataLoaderBlob
+  args:
+    batch_size: 100
+
+optimizer:
+  module: torch.optim
+  name: Adam
+  args:
+    lr: .001
+
+trainer:
+  module: lab.trainer
+  name: Trainer
+  args:
+    n_epochs: 1000
+    bm_metric: loss
+    early_stop_criterion: 500 # if no improvement over this many epochs, stop training
+    log_dir: results
+    save_dir: results
+
+    max_rec_scheduler: # linear increase from min to max
+      step_length: 50
+

@@ -1,4 +1,5 @@
 import torch
+from torch import nn
 import yaml
 from importlib import import_module
 from collections import defaultdict
@@ -54,13 +55,15 @@ class MetricAccumulator:
         self.metrics = defaultdict(lambda: 0)
         self.counter = 0
 
-def create_mlp(layer_dims, output_activation=False):
+def create_mlp(layer_dims, output_activation=False, dropout=.0, out_dropout=False):
     n_layers = len(layer_dims)
     layers = []
     for layer_idx in range(n_layers - 1):
         layers.append(torch.nn.Linear(layer_dims[layer_idx], layer_dims[layer_idx + 1]))
         if layer_idx != n_layers - 2 or output_activation:
             layers.append(torch.nn.LeakyReLU())
+        if layer_idx != n_layers - 2 or out_dropout:
+            layers.append(torch.nn.Dropout(dropout))
 
     return torch.nn.Sequential(*layers)
 
@@ -72,12 +75,15 @@ def get_trainer(config):
     return trainer
 
 
-def get_model(config, in_dim, out_dim):
+def get_model(config, in_dim, out_dim, vocab_size=None):
     module_name = config['model']['module']
     class_name = config['model']['name']
     args = config['model']['args']
     args.update({'device': config['device']})
-    model = create_instance(module_name, class_name, args, in_dim, out_dim)
+    if vocab_size is None:
+        model = create_instance(module_name, class_name, args, in_dim, out_dim)
+    else:
+        model = create_instance(module_name, class_name, args, in_dim, out_dim, vocab_size)
     return model
 
 
@@ -98,6 +104,34 @@ def get_data_loader(config):
 
 def reset_parameters(model):
     model.apply(lambda w: w.reset_parameters() if hasattr(w, 'reset_parameters') else None)
+
+def create_rbf(in_dim, rbf_dim, out_dim):
+    rbf_layer = RBF(in_dim, rbf_dim)
+    linear_layer = nn.Linear(rbf_dim, out_dim)
+    return nn.Sequential(rbf_layer, linear_layer)
+
+class RBF(nn.Module):
+    def __init__(self, in_dim, out_dim, basis_function='exp'):
+        super().__init__()
+        self.center = nn.Parameter(torch.randn((1, in_dim, out_dim)))  # [1, in_dim, out_dim]
+        self.variance = nn.Parameter(torch.exp(torch.randn((1, out_dim))))            # [1, out_dim]
+
+        if basis_function == 'exp':
+            self.activation = lambda x: torch.exp(-x)
+        elif basis_function == 'inverse':
+            self.activation = lambda x: 1 / torch.sqrt(x)
+
+    def forward(self, x):
+        """
+        :param x: input [batch_size, in_dim]
+        :return: output [batch_size, out_dim]
+        """
+        x = x.unsqueeze(-1)                                 # [batch_size, in_dim, 1]
+        squared_entries = (x - self.center)**2              # [batch_size, in_dim, out_dim]
+        squared_distances = torch.sum(squared_entries, dim=1)   # [batch_size, out_dim]
+        out = self.activation(squared_distances / self.variance)
+        return out
+
 
 if __name__ == '__main__':
 

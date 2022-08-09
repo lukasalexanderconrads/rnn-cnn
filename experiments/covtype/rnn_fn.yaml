@@ -1,0 +1,53 @@
+name: covtype/rnn_fn/
+device: cuda:0
+num_runs: 3
+seed: 2
+
+model:
+  module: lab.models.recurrence_function
+  name: LearnableRNN
+  args:
+    rnn_type: ['myrnn1']
+    rnn_dim: 16
+    max_rec: [5]               # maximum number of recurrences
+
+    reg_weight: [1]
+    reg_target: !!python/tuple [.5, .2, .1, .05, .05]
+
+    rec_fn_layers: [!!python/tuple [16]]
+    rec_fn_input: [embedding_detached]
+    tau: [.5]
+
+
+loader:
+  module: lab.data.dataloaders
+  name: DataLoaderCovtype
+  args:
+    batch_size: 500
+    seed: 1
+
+optimizer:
+  module: torch.optim
+  name: Adam
+  args:
+    lr: .001
+
+trainer:
+  module: lab.trainer
+  name: Trainer
+  args:
+    n_epochs: 2000
+    bm_metric: cross_entropy
+    early_stop_criterion: 300 # if no improvement over this many epochs, stop training
+    log_dir: results
+    save_dir: results
+
+    #loss_scheduler: None # fraction of total training that a given loss type is active
+      #first_step: .0    # loss is computed for the first step's output
+      #every_step: .0    # loss is computed for every step's output
+      # remaining time:   loss is computed for the final step's output
+
+    tau_scheduler:
+      tau_min: .1
+      tau_max: 1
+

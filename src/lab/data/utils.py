@@ -25,7 +25,44 @@ def make_spiral(n_data, seed=1):
     y = y[randperm]
     return x, y
 
-def make_blobs(seed=1):
+def make_blobs(seed=1, modified=False):
+    np.random.seed(seed)
+
+    data = []
+    target = []
+    # if modified:
+    #     centers = np.array([[1, 1], [1, 0], [0, 2], [.5, 2], [1, 1.5], [-.5, 2]])
+    # else:
+    #     centers = np.array([[1, 1], [1, 0], [0, 1], [0, 2], [.5, 2], [1, 1.5], [-.5, 2]])
+    # for c in centers:
+    #     data.append(c + np.random.randn(1000, 2) / 15)
+    #     target += [0] * 1000
+    #
+    # centers = np.array([[0, 0], [.5, 1], [.8, .5], [-.5, .5], [-.2, 1.5], [-.5, 0], [-.25, -1]])
+    #
+    # for c in centers:
+    #     data.append(c + np.random.randn(1000, 2) / 15)
+    #     target += [1] * 1000
+
+    centers = np.array([[2, 2], [2, 1], [1, 2], [1, 1], [2, 0], [1, -1], [2, -2], [0, 1], [0, -2],
+                        [-1, 2], [-1, 0], [0, 0], [2, -1]])
+    for c in centers:
+        data.append(c + np.random.randn(1000, 2) / 5)
+        target += [0] * 1000
+
+    centers = np.array([[-2, -2], [-2, -1], [-1, -2], [-1, -1], [1, 0], [-2, 0], [1, -2], [-2, 1],
+                        [-.5, 1.5], [-2, 2], [0, -3], [-1, -3], [4, 4]])
+
+    for c in centers:
+        data.append(c + np.random.randn(1000, 2) / 5)
+        target += [1] * 1000
+
+    data = np.concatenate(data, axis=0)
+    target = np.array(target)
+
+    return data, target
+
+def make_blobs3c(seed=1):
     np.random.seed(seed)
 
     data = []
@@ -37,10 +74,14 @@ def make_blobs(seed=1):
         target += [0] * 1000
 
     centers = np.array([[0, 0], [.5, 1], [.8, .5], [-.5, .5], [-.2, 1.5], [-.5, 0], [-.25, -1]])
-
     for c in centers:
         data.append(c + np.random.randn(1000, 2) / 15)
         target += [1] * 1000
+
+    centers = np.array([[1, -.5], [.75, -1], [.5, -.5], [.25, .5], [.5, 0], [.25, -1], [-.5, 1]])
+    for c in centers:
+        data.append(c + np.random.randn(1000, 2) / 15)
+        target += [2] * 1000
 
     data = np.concatenate(data, axis=0)
     target = np.array(target)

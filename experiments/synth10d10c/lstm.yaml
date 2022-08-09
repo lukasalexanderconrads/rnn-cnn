@@ -1,0 +1,51 @@
+name: synth10d10c/lstm/
+device: cuda:0
+num_runs: 3
+seed: 1
+
+model:
+  module: lab.models.simple
+  name: LSTM
+  args:
+    fc_dims: !!python/tuple []
+    lstm_dim: 5
+    head_dims: !!python/tuple []
+    threshold: [.4]             # threshold above which recurrence is stopped
+    max_rec: 2               # maximum number of recurrences
+    loss_type: final          # final, every, (first)
+    fixed_input: [True, False]
+
+loader:
+  module: lab.data.dataloaders
+  name: DataLoaderSyntheticHard
+  args:
+    batch_size: 100
+    n_classes: 10
+    n_features: 10
+    n_clusters_per_class: 2
+    seed: 1
+
+optimizer:
+  module: torch.optim
+  name: Adam
+  args:
+    lr: .001
+
+trainer:
+  module: lab.trainer
+  name: Trainer
+  args:
+    n_epochs: 2000
+    bm_metric: loss
+    early_stop_criterion: 300 # if no improvement over this many epochs, stop training
+    log_dir: results
+    save_dir: results
+
+    #loss_scheduler: None # fraction of total training that a given loss type is active
+      #first_step: .0    # loss is computed for the first step's output
+      #every_step: .0    # loss is computed for every step's output
+      # remaining time:   loss is computed for the final step's output
+
+    max_rec_scheduler: # step wise increase from min to max
+      step_length: 5  # how many epochs is one step
+

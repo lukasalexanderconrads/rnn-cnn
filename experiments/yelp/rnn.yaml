@@ -1,0 +1,44 @@
+name: yelp/rnn/
+device: cuda:0
+num_runs: 1
+seed: 1
+
+model:
+  module: lab.models.nlp
+  name: NLPRNN
+  args:                   # layers: (in_dim, layer_dims[0]), ..., (layer_dims[-1], out_dim)
+    head_dims: [!!python/tuple []]
+    dropout: .2
+    # rnn dim is encoder hidden dim
+    max_rec: 2
+    threshold: [.6]
+
+    encoder:
+      module: lab.blocks
+      name: EncoderLSTM
+      args:
+        emb_dim: 64
+        hidden_dim: 64
+
+loader:
+  module: lab.data.dataloaders
+  name: DataLoaderYelp
+  args:
+    batch_size: 64
+    path: data/Yelp
+
+optimizer:
+  module: torch.optim
+  name: Adam
+  args:
+    lr: .001
+
+trainer:
+  module: lab.trainer
+  name: Trainer
+  args:
+    n_epochs: 300
+    bm_metric: cross_entropy
+    early_stop_criterion: 10 # if no improvement over this many epochs, stop training
+    log_dir: results
+    save_dir: results

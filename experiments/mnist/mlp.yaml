@@ -1,23 +1,19 @@
-name: synth100d10c/mlp_cv/
+name: mnist/mlp/
 device: cuda:0
-num_runs: 1
+num_runs: 2
 seed: 1
 
 model:
   module: lab.models.simple
   name: MLP
   args:                   # layers: (in_dim, layer_dims[0]), ..., (layer_dims[-1], out_dim)
-    layer_dims: [!!python/tuple [10, 10, 10]]
+    layer_dims: [!!python/tuple [], !!python/tuple [10], !!python/tuple [10, 10], !!python/tuple [10, 10, 10]]
 
 loader:
-  module: lab.data.dataloaders_crossval
-  name: DataLoaderSyntheticHardCV
+  module: lab.data.dataloaders
+  name: DataLoaderMNIST
   args:
     batch_size: 100
-    n_classes: 10
-    n_splits: 10
-    n_features: 50
-    n_clusters_per_class: 50
     seed: 1
 
 optimizer:
@@ -28,10 +24,10 @@ optimizer:
 
 trainer:
   module: lab.trainer
-  name: CrossValidationTrainer
+  name: Trainer
   args:
-    n_epochs: 2000
+    n_epochs: 1000
     bm_metric: cross_entropy
-    early_stop_criterion: 200 # if no improvement over this many epochs, stop training
+    early_stop_criterion: 80 # if no improvement over this many epochs, stop training
     log_dir: results
     save_dir: results
