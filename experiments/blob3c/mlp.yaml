@@ -1,13 +1,13 @@
 name: blob3c/mlp/
 device: cuda:0
-num_runs: 10
+num_runs: 20
 seed: 1
 
 model:
   module: lab.models.simple
   name: MLP
   args:                   # layers: (in_dim, layer_dims[0]), ..., (layer_dims[-1], out_dim)
-    layer_dims: [!!python/tuple [2, 2, 2], !!python/tuple [2, 2]]
+    layer_dims: [!!python/tuple [2, 2]]
 
 loader:
   module: lab.data.dataloaders

@@ -1,9 +1,6 @@
-import torch
-from torch import nn
 from lab.models.simple import MLP
 from lab.blocks import *
 from lab.utils import create_mlp, create_rbf
-from lab.utils import create_instance
 
 class RNN(MLP):
 
@@ -272,6 +269,9 @@ class RNN(MLP):
             loss = cross_entropy + learnable_loss
             return {'loss': loss, 'cross_entropy': cross_entropy, 'learnable_loss': learnable_loss}
         else:
+            if self.rec_fn_input == 'embedding':
+                with torch.no_grad():
+                    input = self.fc_layers(input)
             final_step_logits = self.get_final_step_probs(input)    # [batch_size, max_rec]
             final_step_pseudo_sample = nn.functional.gumbel_softmax(final_step_logits, dim=-1, tau=self.tau, hard=True) # [batch_size, max_rec]
             probs_stacked = nn.functional.softmax(logits_stacked, dim=-1)

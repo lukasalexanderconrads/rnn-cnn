@@ -1,19 +1,19 @@
-name: blob-hard/rnn/
+name: blob/rnn/
 device: cuda:0
 num_runs: 20
 seed: 1
 
 model:
-  module: lab.models.recurrence_estim
+  module: lab.models.recurrent
   name: RNN
   args:
     rnn_dim: 2
-    max_rec: [3]               # maximum number of recurrences
+    max_rec: [2]                    # maximum number of recurrences
     rnn_type: [linear, myrnn1]
 
-    stopping_criterion: [threshold]
+    stopping_criterion: [threshold] # threshold stopping criterion
 
-    threshold: [0.7]
+    threshold: [0.8]                # threshold value pi
 
 loader:
   module: lab.data.dataloaders

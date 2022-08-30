@@ -1,4 +1,4 @@
-name: blob-hard/mlp/
+name: blob/mlp/
 device: cuda:0
 num_runs: 20
 seed: 1
@@ -7,7 +7,7 @@ model:
   module: lab.models.simple
   name: MLP
   args:
-    layer_dims: [!!python/tuple [2, 2, 2, 2, 2, 2]]
+    layer_dims: [!!python/tuple [2, 2]]  # corresponds to MLP-3 (in_dim, 2, 2, out_dim)
 
 loader:
   module: lab.data.dataloaders

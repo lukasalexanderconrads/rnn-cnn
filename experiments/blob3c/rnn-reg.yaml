@@ -1,26 +1,17 @@
 name: blob3c/rnn/
 device: cuda:0
-num_runs: 15
-seed: 100
+num_runs: 20
+seed: 1
 
 model:
   module: lab.models.recurrent
   name: RNN
   args:
+    rnn_type: [linear, myrnn1]
     rnn_dim: 2
     max_rec: 2             # maximum number of recurrences
-    rnn_type: [linear]
 
-    stopping_criterion: [learnable]
-    learnable_target: [none, first_correct]
-
-    rec_fn_type: [mlp, rbf]
-    rbf_dim: 2
-    rec_fn_layers: !!python/tuple [2]
-    reg_target: !!python/tuple [.8, .2]
-    reg_weight: 1
-    tau: .1
-
+    stopping_criterion: [first_correct]
 
 loader:
   module: lab.data.dataloaders

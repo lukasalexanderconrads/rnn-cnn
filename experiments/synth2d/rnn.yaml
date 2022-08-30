@@ -4,7 +4,7 @@ num_runs: 10
 seed: 1
 
 model:
-  module: lab.models.recurrence_estim
+  module: lab.models.recurrent
   name: RNN
   args:
     rnn_dim: 2

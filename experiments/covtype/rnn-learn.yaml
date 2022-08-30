@@ -4,21 +4,22 @@ num_runs: 3
 seed: 1
 
 model:
-  module: lab.models.recurrence_estim
+  module: lab.models.recurrent
   name: RNN
   args:
     rnn_type: [linear, myrnn1]
     rnn_dim: 16
-    max_rec: 5             # maximum number of recurrences
+    max_rec: [5]              # maximum number of recurrences
 
     stopping_criterion: [learnable]
-    learnable_target: [first_correct, none]
+    learnable_target: [none, first_correct]
     rec_fn_input: [embedding]
 
-    rec_fn_type: [mlp]
+    rec_fn_type: [rbf, mlp]
     rbf_dim: 8
     rec_fn_layers: !!python/tuple [8]
     reg_target: !!python/tuple [.7, .1, .1, .05, .05]
+    #reg_target: !!python/tuple [.8, .2]
     reg_weight: 1
     tau: .1
 
@@ -47,4 +48,7 @@ trainer:
     early_stop_criterion: 1000 # if no improvement over this many epochs, stop training
     log_dir: results
     save_dir: results
+
+    max_rec_scheduler: # linear increase from min to max
+      step_length: 50
 

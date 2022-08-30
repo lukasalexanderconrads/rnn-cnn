@@ -1,33 +1,33 @@
-name: blob3c/rnn/
+name: spiral/rnn/
 device: cuda:0
-num_runs: 15
-seed: 100
+num_runs: 5
+seed: 1
 
 model:
   module: lab.models.recurrent
   name: RNN
   args:
-    rnn_dim: 2
-    max_rec: 2             # maximum number of recurrences
-    rnn_type: [linear]
+    rnn_dim: 5
+    max_rec: [5]               # maximum number of recurrences
+    rnn_type: [myrnn1]
 
     stopping_criterion: [learnable]
     learnable_target: [none, first_correct]
 
-    rec_fn_type: [mlp, rbf]
-    rbf_dim: 2
-    rec_fn_layers: !!python/tuple [2]
-    reg_target: !!python/tuple [.8, .2]
+    rec_fn_type: [rbf, mlp]
+    rbf_dim: 5
+    rec_fn_layers: !!python/tuple [5]
+    reg_target: !!python/tuple [.7, .1, .1, .05, .05]
+    #reg_target: !!python/tuple [.8, .2]
     reg_weight: 1
     tau: .1
 
 
 loader:
   module: lab.data.dataloaders
-  name: DataLoaderBlob3C
+  name: DataLoaderSpiral
   args:
-    batch_size: 500
-    seed: 1
+    batch_size: 32
 
 optimizer:
   module: torch.optim
@@ -39,11 +39,12 @@ trainer:
   module: lab.trainer
   name: Trainer
   args:
-    n_epochs: 2000
+    n_epochs: 1000
     bm_metric: cross_entropy
     early_stop_criterion: 300 # if no improvement over this many epochs, stop training
     log_dir: results
     save_dir: results
 
-    max_rec_scheduler:
-      step_length: 50
+    max_rec_scheduler: # step wise increase from min to max
+      step_length: 50  # how many epochs is one step
+

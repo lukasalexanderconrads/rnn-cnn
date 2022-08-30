@@ -1,19 +1,19 @@
 name: blob3c/rnn/
 device: cuda:0
-num_runs: 5
-seed: 10
+num_runs: 20
+seed: 1
 
 model:
-  module: lab.models.recurrence_estim
+  module: lab.models.recurrent
   name: RNN
   args:
-    rnn_type: ['linear']
+    rnn_type: [linear, myrnn1]
     rnn_dim: 2
-    max_rec: 2             # maximum number of recurrences
+    max_rec: [2, 3]             # maximum number of recurrences
 
     stopping_criterion: [threshold]
 
-    threshold: [0.5, 0.6, 0.7, 0.8]
+    threshold: [0.7]
 
 
 loader:
@@ -40,4 +40,4 @@ trainer:
     save_dir: results
 
     max_rec_scheduler: # linear increase from min to max
-      step_length: [5]
+      step_length: 50
