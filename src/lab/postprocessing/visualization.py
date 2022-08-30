@@ -1,7 +1,5 @@
 import torch
 import matplotlib.pyplot as plt
-from lab.models.recurrence_function import LearnableRNN
-from lab.models.recurrence_estim import RNN
 import numpy as np
 
 
@@ -33,13 +31,27 @@ def make_histogram_plot(model, loader):
     return hgram
 
 def plot_acc_over_cost(metric_list_list, name_list):
-    color_list = ['blue', 'red', 'green', 'violet', 'orange']
+    color_list = ['blue', 'red', 'green', 'violet', 'orange', 'indigo', 'darkolivegreen', 'midnightblue']
     for metric_list, name, color in zip(metric_list_list, name_list, color_list):
         acc = np.concatenate([metric[0] for metric in metric_list])
         cost = np.concatenate([metric[2] for metric in metric_list])
-        plt.scatter(cost, acc, c=color, label=name, alpha=.5)
-    plt.legend()
+        plt.scatter(cost, acc, c=color, label=name, alpha=.5, s=15)
+    plt.legend(loc='lower right')
     plt.xlabel('cost')
     plt.ylabel('accuracy')
     plt.tight_layout()
-    plt.grid(visible=True)
+    plt.grid(visible=True, alpha=.5)
+
+def plot_ce_over_cost(metric_list_list, name_list):
+    color_list = ['blue', 'red', 'green', 'violet', 'orange', 'indigo', 'darkolivegreen', 'midnightblue']
+    for metric_list, name, color in zip(metric_list_list, name_list, color_list):
+        acc = np.concatenate([metric[1] for metric in metric_list])
+        cost = np.concatenate([metric[2] for metric in metric_list])
+        plt.scatter(cost, acc, c=color, label=name, alpha=.5, s=15)
+    plt.legend(loc='lower right')
+    plt.xlabel('computational cost')
+    plt.ylabel('NLL test loss')
+    plt.ylim(0, .6)
+    plt.tight_layout()
+    plt.grid(visible=True, alpha=.5)
+

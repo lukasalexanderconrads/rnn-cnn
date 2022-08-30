@@ -120,7 +120,10 @@ class Trainer:
         if epoch < step_length:
             self.model.max_rec = 1
         elif epoch % step_length == 0:
-            self.model.max_rec = min(self.model.max_rec_lim, self.model.max_rec + 1)
+            if self.model.stop_crit == 'learnable':
+                self.model.max_rec = self.model.max_rec_lim
+            else:
+                self.model.max_rec = min(self.model.max_rec_lim, self.model.max_rec + 1)
 
     def update_tau(self, epoch):
         epoch_frac = epoch / self.n_epochs

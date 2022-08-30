@@ -1,13 +1,7 @@
-from typing import overload
-
 import sklearn.decomposition
-import torch
-import matplotlib.pyplot as plt
 import os
 import numpy as np
-from tqdm import tqdm
-from lab.models.recurrence_estim import RNN
-from lab.models.simple import MLP
+from lab.models.recurrent import RNN
 from lab.utils import *
 from lab.blocks import *
 
@@ -49,9 +43,13 @@ def evaluate(model, dataset, recurrence=None):
     ce /= counter
     return acc, ce, cost
 
-def load_and_evaluate_dir(result_dir, model_dir, crit_estim=None, use_embedding=False, full_return=False):
+def get_timestamps(result_dir, model_dir):
     _, timestamps, _ = next(os.walk(os.path.join(result_dir, model_dir)))
     timestamps = sorted(timestamps)
+    return timestamps
+
+def load_and_evaluate_dir(result_dir, model_dir, crit_estim=None, use_embedding=False, full_return=False, print_best=False):
+    timestamps = get_timestamps(result_dir, model_dir)
 
     acc_list = []
     ce_list = []
@@ -67,6 +65,9 @@ def load_and_evaluate_dir(result_dir, model_dir, crit_estim=None, use_embedding=
         acc_list.append(acc)
         ce_list.append(ce)
         step_list.append(steps)
+
+    if print_best:
+        print(np.array(timestamps)[np.argsort(ce_list)[:2]])
 
     if full_return:
         return np.stack((acc_list, ce_list, step_list), axis=0)
@@ -213,17 +214,19 @@ def get_computational_cost(model, dataset=None, verbose=False):
 
 
 def generate_latex_table_line(name, acc_list, ce_list, step_list):
-    """acc & ce & cost & best acc & best cost & cheapest acc & cheapest cost"""
+    """name & acc & ce & cost & acc/cost"""
     line = name + ' &'
     line += f'{np.around(np.mean(acc_list), 2): .2f} \\pm {np.around(np.std(acc_list), 2): .2f} & '
     line += f'{np.around(np.mean(ce_list), 2): .2f} \\pm {np.around(np.std(ce_list), 2): .2f} & '
     line += f'{np.around(np.mean(step_list), 2): .2f} \\pm {np.around(np.std(step_list), 2): .2f} & '
-    best_index = np.argmax(acc_list)
-    line += f'{np.around(acc_list[best_index], 2): .2f} & '
-    line += f'{np.around(step_list[best_index], 2): .2f} & '
-    cheapest_index = np.argmin(step_list)
-    line += f'{np.around(acc_list[cheapest_index], 2): .2f} & '
-    line += f'{np.around(step_list[cheapest_index], 2): .2f} \\\\'
+    acc_cost_ratio = np.array(acc_list) / np.array(step_list)
+    line += f'{np.around(np.mean(acc_cost_ratio), 2): .2f} \\pm {np.around(np.std(acc_cost_ratio), 2): .2f} \\\\'
+    # best_index = np.argmax(acc_list)
+    # line += f'{np.around(acc_list[best_index], 2): .2f} & '
+    # line += f'{np.around(step_list[best_index], 2): .2f} & '
+    # cheapest_index = np.argmin(step_list)
+    # line += f'{np.around(acc_list[cheapest_index], 2): .2f} & '
+    # line += f'{np.around(step_list[cheapest_index], 2): .2f} \\\\'
 
     print(line)
 
@@ -231,19 +234,60 @@ def generate_latex_table_line(name, acc_list, ce_list, step_list):
 
 def make_table(result_dir, model_type, crit_estim=None, use_embedding=False):
     print('\\begin{center}')
-    print('\\begin{tabular}{ |c||c|c|c|c c|c c| }')
+    print('\\begin{tabular}{ |l||l|l|l|l| }')
     print('\\hline')
-    print(' & & & & best & best & cheapest & cheapest \\\\')
-    print('model & ACC & CE & OPS & ACC & OPS & ACC & OPS \\\\')
+    print(' & & & & ACC/ \\\\')
+    print('model & ACC & CE & OPS & OPS \\\\')
     print('\\hline')
     _, model_paths, _ = next(os.walk(os.path.join(result_dir, model_type)))
     model_paths = sorted(model_paths)
     for model_path in model_paths:
         model_dir = os.path.join(model_type, model_path)
+        name = make_name(model_dir)
         metrics = load_and_evaluate_dir(result_dir, model_dir, crit_estim, use_embedding, full_return=True)
-        generate_latex_table_line(model_path, *metrics)
+        generate_latex_table_line(name, *metrics)
 
         print('\\hline')
 
     print('\\end{tabular}')
     print('\\end{center}')
+
+def make_name(path):
+    name = ''
+    if 'linear' in path:
+        name += 'sRNN '
+    elif 'myrnn1' in path:
+        name += 'hRNN '
+
+    if 'learnable' in path:
+        name += 'learnable '
+        if 'mlp' in path:
+            name += 'MLP '
+        elif 'rbf' in path:
+            name += 'RBF '
+        if 'none' in path:
+            name += 'loss '
+        elif 'first_correct' in path:
+            name += 'first\_correct '
+    elif 'first_correct' in path:
+        name += 'reg '
+    elif 'threshold' in path:
+        name += 'treshold '
+        if '0.5' in path:
+            name += '0.5 '
+        if '0.6' in path:
+            name += '0.6 '
+        if '0.7' in path:
+            name += '0.7 '
+        if '0.8' in path:
+            name += '0.8 '
+        if '0.9' in path:
+            name += '0.9 '
+
+    if 'max_rec_3' in path:
+        name += '$T=3$'
+    elif 'max_rec_5' in path:
+        name += '$T=5$'
+    else:
+        name += '$T=2$'
+    return name

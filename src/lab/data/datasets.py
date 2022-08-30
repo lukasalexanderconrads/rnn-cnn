@@ -110,11 +110,10 @@ class BlobDataset(ClassificationDataset):
 class Blob3CDataset(ClassificationDataset):
     def __init__(self, device, **kwargs):
         self.seed = kwargs.get('seed', 1)
-        self.modified = kwargs.get('modified', False)
         super(Blob3CDataset, self).__init__(device)
 
     def _get_data(self):
-        input, target = make_blobs3c(seed=self.seed, modified=self.modified)
+        input, target = make_blobs3c(seed=self.seed)
         input = torch.tensor(input, dtype=torch.float32)
         target = torch.tensor(target, dtype=torch.int64)
         return input, target

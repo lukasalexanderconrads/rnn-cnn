@@ -7,7 +7,7 @@ model:
   module: lab.models.simple
   name: MLP
   args:                   # layers: (in_dim, layer_dims[0]), ..., (layer_dims[-1], out_dim)
-    layer_dims: [!!python/tuple [16, 16], !!python/tuple [16, 16, 16], !!python/tuple [16, 16, 16, 16]]
+    layer_dims: [!!python/tuple [16, 16]]
 
 loader:
   module: lab.data.dataloaders

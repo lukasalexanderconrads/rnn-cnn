@@ -7,14 +7,11 @@ model:
   module: lab.models.recurrent
   name: RNN
   args:
-    rnn_type: [linear, myrnn1]
+    rnn_type: [linear]
     rnn_dim: 16
-    max_rec: [5]             # maximum number of recurrences
+    max_rec: 2             # maximum number of recurrences
 
-    stopping_criterion: [threshold]
-
-    threshold: [0.5, 0.6, 0.7]
-
+    stopping_criterion: [first_correct]
 
 loader:
   module: lab.data.dataloaders
@@ -39,6 +36,5 @@ trainer:
     log_dir: results
     save_dir: results
 
-    max_rec_scheduler: # linear increase from min to max
-      step_length: 50
-
+    max_rec_scheduler:
+      step_length: 50  # how many epochs is one step

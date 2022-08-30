@@ -1,26 +1,26 @@
-name: blob-hard/rnn/
+name: blob/rnn/
 device: cuda:0
 num_runs: 20
 seed: 1
 
 model:
-  module: lab.models.recurrence_estim
+  module: lab.models.recurrent
   name: RNN
   args:
-    rnn_dim: 2
-    max_rec: 2               # maximum number of recurrences
-    rnn_type: [linear]
+    rnn_dim: 2                              # size of rnn layer (in_dim, 2, 2, out_dim)
+    max_rec: [2]                            # maximum number of recurrences
+    rnn_type: [linear, myrnn1]              # linear: sRNN, myrnn1: hRNN
 
-    stopping_criterion: [learnable]
+    stopping_criterion: [learnable]         # learnable stopping criterion
 
-    learnable_target: [first_correct, none]
+    learnable_target: [first_correct, none] # none: loss target, first_correct: first_correct target
 
-    rec_fn_type: [rbf, mlp]
-    rbf_dim: 2
-    rec_fn_layers: !!python/tuple [2]
-    reg_target: !!python/tuple [.8, .2]
-    reg_weight: 1
-    tau: .1
+    rec_fn_type: [rbf, mlp]                 # type of learnable function [rbf, mlp]
+    rbf_dim: 2                              # hidden layer size for RBF
+    rec_fn_layers: !!python/tuple [2]       # hidden layer sizes for MLP
+    reg_target: !!python/tuple [.8, .2] # regularization prior
+    reg_weight: 1                           # regularization weight
+    tau: .1                                 # temperature for gumbel-softmax
 
 
 loader:
@@ -45,6 +45,6 @@ trainer:
     log_dir: results
     save_dir: results
 
-    max_rec_scheduler: # linear increase from min to max
+    max_rec_scheduler: # for step_length epochs, use max_rec = 1
       step_length: 50
 

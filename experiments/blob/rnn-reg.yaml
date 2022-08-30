@@ -1,27 +1,17 @@
-name: blob-hard/rnn/
+name: blob/rnn/
 device: cuda:0
 num_runs: 10
 seed: 11
 
 model:
-  module: lab.models.recurrence_estim
+  module: lab.models.recurrent
   name: RNN
   args:
     rnn_dim: 2
-    max_rec: 2               # maximum number of recurrences
-    rnn_type: [myrnn1]
+    max_rec: 2                                    # maximum number of recurrences
+    rnn_type: [linear, myrnn1]
 
-    stopping_criterion: [learnable]
-
-    learnable_target: [first_correct, none]
-
-    rec_fn_type: [rbf, mlp]
-    rbf_dim: 2
-    rec_fn_layers: !!python/tuple [2]
-    reg_target: !!python/tuple [.8, .2]
-    reg_weight: 1
-    tau: .1
-
+    stopping_criterion: [first_correct]           # subsequently fitted regression model stopping criterion
 
 loader:
   module: lab.data.dataloaders
