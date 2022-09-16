@@ -1,0 +1,51 @@
+name: cifar/Res18_LSTM_dim9+threshold0.8
+device: cuda:0
+num_runs: 1
+seed: 1
+
+model:
+  module: lab.models.image_models
+  name: Resnet_18_LSTM
+  args:
+
+    lstm_dim: [9]
+    num_class: 10
+    threshold: .8             # threshold above which recurrence is stopped
+    max_rec: [2]               # maximum number of recurrences
+    loss_type: final          # final, every, (first)
+    skip_connections: false   # if skip connection is used in recurrent layer
+
+loader:
+  module: lab.data.dataloaders
+  name: DataLoaderCifar
+  args:
+    batch_size: 128
+    valid_fraction: .1
+#    n_samples: 1.0e5
+#    n_features: 10
+#    n_clusters_per_class: 5
+#    seed: 1
+
+trainer:
+  module: lab.trainer
+  name: Trainer
+  args:
+    n_epochs: 150
+    early_stop_criterion: 100
+    bm_metric: loss
+    log_dir: /home/iailab36/aliakbar/rnn-cnn/scripts/results
+    save_dir: /home/iailab36/aliakbar/rnn-cnn/scripts/results
+optimizer:
+  module: torch.optim
+  name: Adam
+  args:
+    lr: 0.001
+    #loss_scheduler: None # fraction of total training that a given loss type is active
+      #first_step: .0    # loss is computed for the first step's output
+      #every_step: .0    # loss is computed for every step's output
+      # remaining time:   loss is computed for the final step's output
+
+    #max_rec_scheduler: # linear increase from min to max
+      #min: 1
+      #max: 2
+

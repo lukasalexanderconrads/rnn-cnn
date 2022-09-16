@@ -1,0 +1,39 @@
+name: cifar100/rnn_image/
+device: cuda:0
+num_runs: 3
+seed: 1
+
+model:
+  module: lab.models.image_models
+  name: RNN_image
+  args:
+    fc_dims: []
+    rnn_dim: 20
+    head_dims: [ ]
+    threshold: .15             # threshold above which recurrence is stopped
+    max_rec: 2               # maximum number of recurrences
+    loss_type: final          # final, every, (first)
+    skip_connections: false   # if skip connection is used in recurrent layer
+
+loader:
+  module: lab.data.dataloaders
+  name: DataLoaderCifar100
+  args:
+    batch_size: 128
+
+
+trainer:
+  module: lab.trainer
+  name: Trainer
+  args:
+    n_epochs: 300
+    bm_metric: loss
+    log_dir: /home/iailab36/aliakbar/rnn-cnn/scripts/results
+    early_stop_criterion: 150
+    save_dir: /home/iailab36/aliakbar/rnn-cnn/scripts/results
+
+optimizer:
+  module: torch.optim
+  name: Adam
+  args:
+    lr: 0.001

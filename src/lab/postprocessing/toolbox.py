@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import os
 import numpy as np
 from tqdm import tqdm
-from lab.models.recurrence_estim import RNN
+# from lab.models.recurrence_estim import RNN
 from lab.models.simple import MLP
 from lab.utils import *
 from lab.blocks import *
@@ -19,14 +19,15 @@ def load_model(result_dir, model_name, model_version='best_model.pth', device='c
 
     config_path = os.path.join(result_dir, model_name, 'config.yaml')
     config = read_yaml(config_path)
-
+    config['device'] = device
     torch.manual_seed(config['seed'])
 
     if loader is None:
         loader = get_data_loader(config)
 
     vocab_size = loader.vocab_size if hasattr(loader, 'vocab_size') else None
-    model = get_model(config, in_dim=loader.data_dim, out_dim=loader.n_classes, vocab_size=vocab_size).to(device)
+    vocab_size = None
+    model = get_model(config, in_dim=loader.data_dim, out_dim=loader.n_classes).to(device)
 
     model.load_state_dict(state_dict)
     torch.set_grad_enabled(False)
@@ -138,7 +139,7 @@ def get_final_steps_data(model, dataset):
 
 def get_computational_cost(model, dataset=None, verbose=False):
     n_ops_total = 0
-    if not isinstance(model, RNN):
+    if not isinstance(model, torch.nn.LSTM):
         for layer in model.get_logits:
             if hasattr(layer, 'weight'):
                 n_ops_total += layer.weight.size(0) * layer.weight.size(1)
@@ -163,7 +164,7 @@ def get_computational_cost(model, dataset=None, verbose=False):
 
         # calculate operations
         n_ops_rec = 0
-        if isinstance(model.rnn_layer, MyRNN):
+        if isinstance(model.rnn_layer, torch.nn.Linear):
             in_dim = model.rnn_layer.in_dim
             hidden_dim = model.rnn_layer.hidden_dim
             for t, final_step_frac in enumerate(final_step_distr):
